@@ -1,4 +1,4 @@
-#!/apps/free/python/2.7.10/bin/python
+ #!/apps/free/python/2.7.10/bin/python
 # -*- coding: utf-8 -*-    
 from LGneurons import *
 from modelParams import *

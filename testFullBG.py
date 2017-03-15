@@ -217,6 +217,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
   if antagInjectionSite == 'none':
     for N in NUCLEI:
       strTestPassed = 'NO!'
+      #print "nest status ?????????????????? \n\t",nest.GetStatus(spkDetect[N],)[0]
       expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*simDuration) * 1000
       if expeRate[N] <= FRRNormal[N][1] and expeRate[N] >= FRRNormal[N][0]:
         # if the measured rate is within acceptable values
@@ -250,15 +251,18 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
 
   frstr+='\n'
   firingRatesFile=open(dataPath+'firingRates.csv','a')
+  print "File opened : ",firingRatesFile
   firingRatesFile.writelines(frstr)
   firingRatesFile.close()
 
+  #print "Firing rates ::::::::::::::::: ",frstr
   #print "************************************** file writing",text
   #res = open(dataPath+'OutSummary_'+logFileName+'.txt','a')
   res = open(dataPath+'OutSummary.txt','a')
   res.writelines(text)
   res.close()
 
+  #print "OutSummary :::::::::::::::: ",text
   #-------------------------
   # Displays
   #-------------------------
@@ -273,6 +277,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
 
 #-----------------------------------------------------------------------
 def main():
+  interactive = False
   if len(sys.argv) >= 2:
     print "Command Line Parameters"
     paramKeys = ['LG14modelID',
@@ -357,6 +362,10 @@ def main():
   res = open('score.txt','w')
   res.writelines(str(score[0])+'\n')
   res.close()
+  
+  global inDegree_boarders  
+  import plot_tools as pltT
+  #pltT.plot_inDegrees_boarders_table(inDegree_boarders,params['LG14modelID'])
 
 #---------------------------
 if __name__ == '__main__':

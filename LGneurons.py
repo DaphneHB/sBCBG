@@ -12,6 +12,7 @@ import numpy.random as rnd
 import csv
 from math import sqrt, cosh, exp, pi
 
+
 #-------------------------------------------------------------------------------
 # Loads a given LG14 model parameterization
 # ID must be in [0,14]
@@ -262,19 +263,35 @@ def connectMC(type,nameSrc,nameTgt,projType,inDegree,LCGDelays=True,gain=1.):
 # computes the weight of a connection, based on LG14 parameters
 #-------------------------------------------------------------------------------
 def computeW(listRecType,nameSrc,nameTgt,inDegree,gain=1.,verbose=False):
+  maxInDegree = 0
+  minInDegree = 0
+  
   # nu is the average total synaptic inputs a neuron of tgt receives from different neurons of src
   if nameSrc=='CSN' or nameSrc=='PTN':
     nu = alpha[nameSrc+'->'+nameTgt]
     if verbose:
       print '\tMaximal number of distinct input neurons (nu):',nu
       print '\tMinimal number of distinct input neurons     : unknown'
+      
+      # a negative inDegree being impossible this mean its unkonwn
+      minInDegree = -1
+      
   else:
     nu = neuronCounts[nameSrc] / float(neuronCounts[nameTgt]) * P[nameSrc+'->'+nameTgt] * alpha[nameSrc+'->'+nameTgt]
     if verbose:
+      # getting the computation of the min inDegree
+      minInDegree = neuronCounts[nameSrc] / float(neuronCounts[nameTgt]) * P[nameSrc+'->'+nameTgt]
+      
       print '\tMaximal number of distinct input neurons (nu):',nu
-      print '\tMinimal number of distinct input neurons     :',str(neuronCounts[nameSrc] / float(neuronCounts[nameTgt]) * P[nameSrc+'->'+nameTgt])
+      print '\tMinimal number of distinct input neurons     :',str(minInDegree)
+      
   if verbose:
     print '\tCompare with the effective chosen inDegree   :',str(inDegree)
+  
+  maxInDegree = nu
+  
+  # uploading the acceptable intervalles of inDegree for this model
+  inDegree_boarders[nameSrc+'->'+nameTgt] = (minInDegree, maxInDegree, inDegree)
 
   # attenuation due to the distance from the receptors to the soma of tgt:
   attenuation = cosh(LX[nameTgt]*(1-p[nameSrc+'->'+nameTgt])) / cosh(LX[nameTgt])
@@ -545,6 +562,15 @@ rate = {'CSN':   2.  ,
         'GPi':  64.2
         } 
 
+
+# dictionnary for getting the inDegrees boarders intervalles
+# containing tuple (min,max) with the connection as the key
+inDegree_boarders = {}
+# getting nbSim keys nucleus as keys
+keys = nbSim.keys()
+inDegree_boarders = dict(zip(keys, [None]*len(keys)))
+
+
 #---------------------------
 def main():
 
@@ -654,7 +680,7 @@ def main():
       pylab.plot(tSTN, ImSTN)
 
     pylab.show()
-
+ 
 #---------------------------
 if __name__ == '__main__':
   main()

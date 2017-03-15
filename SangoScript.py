@@ -171,7 +171,7 @@ testedParameters={'durationH':    '04',
                   }
 
 testedParametersIntervals = {}
-
+'''
 testedParametersIntervals['lg14modelid']=[9.]
 testedParametersIntervals['nbmsn']=[2644.]
 testedParametersIntervals['nbfsi']=[  53.]
@@ -188,8 +188,8 @@ testedParametersIntervals['ggpe']=[1.]
 testedParametersIntervals['ggpi']=[1.]
 testedParametersIntervals['iegpe']=[11.]
 testedParametersIntervals['iegpi']=[11.]
-
 '''
+
 testedParametersIntervals['gmsn']=[2.,3.,4.]
 testedParametersIntervals['gfsi']=[1., 1.1, 1.2]
 testedParametersIntervals['gstn']=[1., 1.1, 1.2,1.3,1.4]
@@ -197,7 +197,7 @@ testedParametersIntervals['ggpe']=[1., 1.1, 1.2]
 testedParametersIntervals['ggpi']=[1., 1.1, 1.2]
 testedParametersIntervals['iegpe']=[11.,12.,13.]
 testedParametersIntervals['iegpi']=[10.,11.,12.]
-'''
+
 
 ftp = open(timeString+'_testedParameter.txt','w')
 for k,vlist in testedParametersIntervals.iteritems():

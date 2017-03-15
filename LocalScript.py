@@ -6,6 +6,8 @@
 import os
 import time
 
+from SangoScript import recParamExplo, testedParametersIntervals
+
 execTime = time.localtime()
 timeString = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
 
@@ -106,8 +108,8 @@ i = 0
 lg14modelid = 9
 
 # which test will be carried out?
-whichtest = 'testChannelBG' # can be testFullBG, testChannelBG
-nbch = 8
+whichtest = 'testFullBG' # can be testFullBG, testChannelBG
+nbch = 1
 
 # with which additional parameters?
 nbcsn = 3000.
@@ -131,7 +133,27 @@ ggpi=1.
 iegpe=11.
 iegpi=12.
 
+# To get the multi tests with Ie and the gains for GPe and GPi trying multiple values
+# params in SangoScript but in Local
+'''
+def recParamExplo(pdict):
+  if len(pdict)>0:
+    paramK = pdict.keys()[0]
+    calldict = pdict.copy()
+    del calldict[paramK]
+    for v in pdict[paramK]:
+      testedParameters[paramK]=v
+      recParamExplo(calldict)
+  else:
+    global i
+    launchOneParameterizedRun(i)
+    #print i,"->",testedParameters
+    i+= 1
+    
+recParamExplo(testedParametersIntervals)
+'''
 
+# To test specified params
 #nbcsn=12000.
 #nbptn=400.
 launchOneParameterizedRun(i)
