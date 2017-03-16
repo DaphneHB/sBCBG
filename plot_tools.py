@@ -4,10 +4,11 @@ Created on Mon Mar 13 17:32:40 2017
 
 @author: daphnehb
 """
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from LGneurons import NUCLEI, nbSim, interactive, FRRNormal
+from LGneurons import NUCLEI, nbSim, interactive, FRRNormal, dataPath
 
 
 ### FUNCTIONS
@@ -67,24 +68,43 @@ def plot_inDegrees_boarders_table(table_dict, model, filename=None) :
 
 
 '''
-Acceptable margin
+Acceptable margin for a specific model
 To plot the acceptable intervalle of firing rates and the obtained FR
 '''
-def plot_acceptable_margin () :
+def plot_acceptable_margin_oneModel (model=None) :
   def labeling(xy, h, text):
     y = xy[1] + h + 1  # shift y-value for label so that it's above the rect
     plt.text(xy[0] + 0.05, y, text, ha="center", family='sans-serif', size=14)
+    
+  def column(matrix, i):
+    return [float(row[i]) for row in matrix]    # from string list to float list
   
   global NUCLEI,FRRNormal
   
+  simusFR = list()
+  # getitng the different existing firing rates in the log/firingRates.csv file
+  firingRatesFile=open(dataPath+'firingRates.csv','r')
+  allFiringRates = firingRatesFile.readlines()
+  firingRatesFile.close()
+  # for each simulation done for this specific model
+  # recording in simusFR table the firing rates
+  for lineSimu in allFiringRates :
+    simuCases = lineSimu.split(",")
+    # if it is the good model
+    if (("#" + str(model)) in simuCases[0]) :
+      # for no antagonnist injection (normal)
+      if ("none" in simuCases[1]) :
+        simusFR.append(simuCases[2:-1])     # removing the last \n
+  nbSimus = len(simusFR)
+    
   rect_size = 0.1
   nbNuclei = len(NUCLEI)
   
   fig=plt.figure(figsize=(rect_size*nbNuclei*10, 10))
-  ax = fig.add_subplot(111)#, aspect='equal')
+  ax = fig.add_subplot(111)
   
   # getting the ordinate max range
-  ymax = 10
+  ymax = -10
   
   # to boxplots
   #margin_data = list()
@@ -94,7 +114,7 @@ def plot_acceptable_margin () :
   
     # saving the y range
     if (ymax < FRRNormal[N][1]) :
-      ymax = FRRNormal[N][1] + 10 # with some margin
+      ymax = FRRNormal[N][1]
       
     x = 2*i*rect_size+rect_size
     y = FRRNormal[N][0]
@@ -114,18 +134,115 @@ def plot_acceptable_margin () :
     # setting a label on the rectangle
     labeling([x,y],h,N)
     
-    # for each generated point for this nucleus
-    # displaying and checking whether it is in or out side of the margins
-    # TODO : getting back the generated points
+    # for each simulation done and registered
+    # plotting the points
+    # getting some random x around a certain value (for legibility)
+    xPt = np.random.normal(x + w/2, rect_size/5, nbSimus)       # mean loc, scale/variance, nb
+    # getting the corresponding column
+    yPt = column(simusFR,i)
+    ax.scatter(xPt,yPt,s=10)
+    # to verify the maximum value to plot even with the points
+    if (max(yPt) > ymax) :
+      ymax = max(yPt)
     
     # To change to boxplots    
-    #ax2.boxplot(margin_data)
+    #ax.boxplot(margin_data)
 
   # removing labels from x
   ax.set_xticklabels([])
 
-  ax.set_ylim([0,ymax])
-  fig.canvas.set_window_title("Firing Rates margin")
+  ax.set_ylim([-5,ymax + 10])       # with some margin
+  fig.canvas.set_window_title("Firing Rates margin for model " +str(model))
+  
+  plt.show()
+
+
+'''
+Acceptable margin for every tested model which appear in firingRates.csv
+To plot the acceptable intervalle of firing rates and the obtained FR
+'''
+def plot_acceptable_margin_all () :
+  def labeling(xy, h, text):
+    y = xy[1] + h + 1  # shift y-value for label so that it's above the rect
+    plt.text(xy[0] + 0.05, y, text, ha="center", family='sans-serif', size=14)
+    
+  def column(matrix, i):
+    return [float(row[i]) for row in matrix]    # from string list to float list
+  
+  global NUCLEI,FRRNormal
+  
+  simusFR = list()
+  # getitng the different existing firing rates in the log/firingRates.csv file
+  firingRatesFile=open(dataPath+'firingRates.csv','r')
+  allFiringRates = firingRatesFile.readlines()
+  firingRatesFile.close()
+  # for each simulation done for this specific model
+  # recording in simusFR table the firing rates
+  for lineSimu in allFiringRates :
+    simuCases = lineSimu.split(",")
+    # if it is the good model
+    if (("#" + str(model)) in simuCases[0]) :
+      # for no antagonnist injection (normal)
+      if ("none" in simuCases[1]) :
+        simusFR.append(simuCases[2:-1])     # removing the last \n
+  nbSimus = len(simusFR)
+    
+  rect_size = 0.1
+  nbNuclei = len(NUCLEI)
+  
+  fig=plt.figure(figsize=(rect_size*nbNuclei*10, 10))
+  ax = fig.add_subplot(111)
+  
+  # getting the ordinate max range
+  ymax = -10
+  
+  # to boxplots
+  #margin_data = list()
+  
+  for i,N in enumerate(NUCLEI) :
+    #margin_data.append([FRRNormal[N][0],FRRNormal[N][1]])
+  
+    # saving the y range
+    if (ymax < FRRNormal[N][1]) :
+      ymax = FRRNormal[N][1]
+      
+    x = 2*i*rect_size+rect_size
+    y = FRRNormal[N][0]
+    w = rect_size
+    h = FRRNormal[N][1]-FRRNormal[N][0]
+    
+    # drawing a rectangle as the acceptable intervalle
+    ax.add_patch(
+        patches.Rectangle(
+            # letting some margin
+            (x, y),           # (x,y) position of the bottom left
+            w,                # width
+            h,                # height
+            fill=False,       # remove background
+        )
+    )
+    # setting a label on the rectangle
+    labeling([x,y],h,N)
+    
+    # for each simulation done and registered
+    # plotting the points
+    # getting some random x around a certain value (for legibility)
+    xPt = np.random.normal(x + w/2, rect_size/5, nbSimus)       # mean loc, scale/variance, nb
+    # getting the corresponding column
+    yPt = column(simusFR,i)
+    ax.scatter(xPt,yPt,s=10)
+    # to verify the maximum value to plot even with the points
+    if (max(yPt) > ymax) :
+      ymax = max(yPt)
+    
+    # To change to boxplots    
+    #ax.boxplot(margin_data)
+
+  # removing labels from x
+  ax.set_xticklabels([])
+
+  ax.set_ylim([-5,ymax + 10])       # with some margin
+  fig.canvas.set_window_title("Firing Rates margin for model " +str(model))
   
   plt.show()
 
@@ -139,4 +256,4 @@ table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.
 
 plot_inDegrees_boarders_table(table,'0')
 '''
-#plot_acceptable_margin()
+plot_acceptable_margin(2)

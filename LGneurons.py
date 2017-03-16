@@ -1,6 +1,6 @@
 #!/apps/free/python/2.7.10/bin/python
 # -*- coding: utf-8 -*-
-interactive = True # avoid loading X dependent things
+interactive = False # avoid loading X dependent things
                    # set to False for simulations on Sango
 
 if interactive :
@@ -569,6 +569,9 @@ inDegree_boarders = {}
 # getting nbSim keys nucleus as keys
 keys = nbSim.keys()
 inDegree_boarders = dict(zip(keys, [None]*len(keys)))
+
+# recording the path where all data is saved
+dataPath='log/'
 
 
 #---------------------------

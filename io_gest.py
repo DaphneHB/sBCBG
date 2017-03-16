@@ -23,7 +23,7 @@ def write_inDegree_table(model, table_dict, dirname, filename=None) :
     filename = dirname + str(model)
   filename = filename + ".txt"
   
-  file_text = "Model number " + model + "\n"
+  file_text = "Model number " + str(model) + "\n"
   file_text += "Connnection (Src->Trgt) | minInDegree | maxInDegree | choosenValue \n"
   
   print "Writing the inDegree boarders table in a file (",filename,")"

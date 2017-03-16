@@ -6,7 +6,7 @@
 import os
 import time
 
-from SangoScript import recParamExplo, testedParametersIntervals
+#from SangoScript import recParamExplo, testedParametersIntervals
 
 execTime = time.localtime()
 timeString = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
@@ -135,7 +135,40 @@ iegpi=12.
 
 # To get the multi tests with Ie and the gains for GPe and GPi trying multiple values
 # params in SangoScript but in Local
-'''
+# with which additional parameters?
+testedParameters={'durationH':    '04',
+                  'durationMin':  '00',
+                  'nbcpu':        '8',
+                  'whichTest':    'testChannelBG',
+                  'nbch': 8,
+                  'lg14modelid':  9,
+                  'nbmsn':2644.,
+                  'nbfsi':  53.,
+                  'nbstn':   8.,
+                  'nbgpe':  25.,
+                  'nbgpi':  14.,
+                  'nbcsn':3000.,
+                  'nbptn': 100.,
+                  'nbcmpf':  9.,
+                  'gmsn':    4.,
+                  'gfsi':    1.,
+                  'gstn':    1.4,
+                  'ggpe':    1.,
+                  'ggpi':    1.,
+                  'iegpe':  11.,
+                  'iegpi':  11.,
+                  }
+                  
+testedParametersIntervals = {}
+
+testedParametersIntervals['gmsn']=[2.,3.,4.]
+testedParametersIntervals['gfsi']=[1., 1.1, 1.2]
+testedParametersIntervals['gstn']=[1., 1.1, 1.2,1.3,1.4]
+testedParametersIntervals['ggpe']=[1., 1.1, 1.2]
+testedParametersIntervals['ggpi']=[1., 1.1, 1.2]
+testedParametersIntervals['iegpe']=[11.,12.,13.]
+testedParametersIntervals['iegpi']=[10.,11.,12.]
+
 def recParamExplo(pdict):
   if len(pdict)>0:
     paramK = pdict.keys()[0]
@@ -151,6 +184,7 @@ def recParamExplo(pdict):
     i+= 1
     
 recParamExplo(testedParametersIntervals)
+
 '''
 
 # To test specified params
@@ -159,3 +193,4 @@ recParamExplo(testedParametersIntervals)
 launchOneParameterizedRun(i)
 i+=1
 
+'''

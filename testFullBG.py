@@ -210,7 +210,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
   score = 0
 
   text=[]
-  frstr = antagInjectionSite + ', '
+  frstr = "#" + str(params['LG14modelID'])+ " , " + antagInjectionSite + ', '
   s = '----- RESULTS -----'
   print s
   text.append(s+'\n')
@@ -251,7 +251,6 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
 
   frstr+='\n'
   firingRatesFile=open(dataPath+'firingRates.csv','a')
-  print "File opened : ",firingRatesFile
   firingRatesFile.writelines(frstr)
   firingRatesFile.close()
 
@@ -337,13 +336,13 @@ def main():
   score = np.zeros((2))
   score += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=True)
 
-  '''
+  
   for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
     score += checkAvgFR(params=params,antagInjectionSite='GPe',antag=a)
 
   for a in ['All','AMPA','NMDA+AMPA','NMDA','GABAA']:
     score += checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
-  '''
+  
   #-------------------------
   print "******************"
   print "* Score:",score[0],'/',score[1]
