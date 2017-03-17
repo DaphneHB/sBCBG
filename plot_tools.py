@@ -4,6 +4,7 @@ Created on Mon Mar 13 17:32:40 2017
 
 @author: daphnehb
 """
+import re
 import random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -72,6 +73,8 @@ Acceptable margin for a specific model
 To plot the acceptable intervalle of firing rates and the obtained FR
 '''
 def plot_acceptable_margin_oneModel (model=None) :
+  NUM_COLOR = 1
+  
   def labeling(xy, h, text):
     y = xy[1] + h + 1  # shift y-value for label so that it's above the rect
     plt.text(xy[0] + 0.05, y, text, ha="center", family='sans-serif', size=14)
@@ -184,6 +187,7 @@ def plot_acceptable_margin_all () :
   # to boxplots
   #margin_data = list()
   
+  ## plotting every box margin
   for i,N in enumerate(NUCLEI) :
     #margin_data.append([FRRNormal[N][0],FRRNormal[N][1]])
   
@@ -208,14 +212,33 @@ def plot_acceptable_margin_all () :
     )
     # setting a label on the rectangle
     labeling([x,y],h,N)
+    xmax = x+rect_size        # at the end of the loop, x will get the last
     
     # To change to boxplots    
     #ax.boxplot(margin_data)
+
+  # getitng the different existing firing rates in the log/firingRates.csv file
+  firingRatesFile=open(dataPath+'firingRates.csv','r')
+  allFiringRates = firingRatesFile.readlines()
+  firingRatesFile.close()
+  nbSimus = len(allFiringRates)
+  
+  ## plotting every simu (generating a color by simu)
+  for lineSimu in allFiringRates :
+    lineSimu = lineSimu.split(",")
+    simu_num = int(re.findall('\d+',lineSimu[0])[0])
+    print "Simu num : ",simu_num
+    # getting the normal simu
+    if ('none' in lineSimu[1]) :
+      # getting the (new) color for this model
+      
+      for i,N in enumerate(NUCLEI) :
+        pass
   
   # removing labels from x
   ax.set_xticklabels([])
   
-  ax.set_xlim([0,xmax + 10])       # with some margin  
+  ax.set_xlim([0,xmax + rect_size])       # with some margin  
   ax.set_ylim([-5,ymax + 10])       # with some margin
   fig.canvas.set_window_title("Firing Rates margin for multiple models ")
   
