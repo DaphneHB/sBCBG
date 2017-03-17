@@ -26,7 +26,7 @@ def launchOneParameterizedRun(i):
   # checks that there are not too many jobs launched, otherwise waits
   readyToGo = False
   while not readyToGo:
-    os.system('squeue -u benoit-girard > squeueStatus.txt')
+    os.system('squeue -u daphne-heraiz > squeueStatus.txt')
 
     qf = open('squeueStatus.txt','r')
     nbQueuedJobs = len(qf.readlines())-1
@@ -46,6 +46,7 @@ def launchOneParameterizedRun(i):
   os.system('mkdir '+IDstring)
   os.system('cp LGneurons.py '+IDstring+'/')
   os.system('cp testFullBG.py '+IDstring+'/')
+  os.system('cp plot_tools.py '+IDstring+'/')
   os.system('cp testChannelBG.py '+IDstring+'/')
   os.system('cp solutions_simple_unique.csv '+IDstring+'/')
   os.system('cp __init__.py '+IDstring+'/')
@@ -150,9 +151,9 @@ params = {'nbcpu':    %s,
 testedParameters={'durationH':    '04',
                   'durationMin':  '00',
                   'nbcpu':        '8',
-                  'whichTest':    'testChannelBG',
-                  'nbch': 8,
-                  'lg14modelid':  9,
+                  'whichTest':    'testFullBG',
+                  'nbch': 1,
+                  'lg14modelid':  2,
                   'nbmsn':2644.,
                   'nbfsi':  53.,
                   'nbstn':   8.,
@@ -171,8 +172,8 @@ testedParameters={'durationH':    '04',
                   }
 
 testedParametersIntervals = {}
-'''
-testedParametersIntervals['lg14modelid']=[9.]
+
+testedParametersIntervals['lg14modelid']=[2.]
 testedParametersIntervals['nbmsn']=[2644.]
 testedParametersIntervals['nbfsi']=[  53.]
 testedParametersIntervals['nbstn']=[   8.]
@@ -181,6 +182,7 @@ testedParametersIntervals['nbgpi']=[  14.]
 testedParametersIntervals['nbcsn']=[3000.]
 testedParametersIntervals['nbptn']=[ 100.]
 testedParametersIntervals['nbcmpf']=[  9.]
+'''
 testedParametersIntervals['gmsn']=[4.]
 testedParametersIntervals['gfsi']=[1.]
 testedParametersIntervals['gstn']=[1.4]
@@ -190,7 +192,7 @@ testedParametersIntervals['iegpe']=[11.]
 testedParametersIntervals['iegpi']=[11.]
 '''
 
-testedParametersIntervals['gmsn']=[2.,3.,4.]
+testedParametersIntervals['gmsn']=[1.,2.,3.,4.]
 testedParametersIntervals['gfsi']=[1., 1.1, 1.2]
 testedParametersIntervals['gstn']=[1., 1.1, 1.2,1.3,1.4]
 testedParametersIntervals['ggpe']=[1., 1.1, 1.2]

@@ -171,22 +171,6 @@ def plot_acceptable_margin_all () :
   
   global NUCLEI,FRRNormal
   
-  simusFR = list()
-  # getitng the different existing firing rates in the log/firingRates.csv file
-  firingRatesFile=open(dataPath+'firingRates.csv','r')
-  allFiringRates = firingRatesFile.readlines()
-  firingRatesFile.close()
-  # for each simulation done for this specific model
-  # recording in simusFR table the firing rates
-  for lineSimu in allFiringRates :
-    simuCases = lineSimu.split(",")
-    # if it is the good model
-    if (("#" + str(model)) in simuCases[0]) :
-      # for no antagonnist injection (normal)
-      if ("none" in simuCases[1]) :
-        simusFR.append(simuCases[2:-1])     # removing the last \n
-  nbSimus = len(simusFR)
-    
   rect_size = 0.1
   nbNuclei = len(NUCLEI)
   
@@ -194,7 +178,8 @@ def plot_acceptable_margin_all () :
   ax = fig.add_subplot(111)
   
   # getting the ordinate max range
-  ymax = -10
+  xmax = 0
+  ymax = 0
   
   # to boxplots
   #margin_data = list()
@@ -224,25 +209,15 @@ def plot_acceptable_margin_all () :
     # setting a label on the rectangle
     labeling([x,y],h,N)
     
-    # for each simulation done and registered
-    # plotting the points
-    # getting some random x around a certain value (for legibility)
-    xPt = np.random.normal(x + w/2, rect_size/5, nbSimus)       # mean loc, scale/variance, nb
-    # getting the corresponding column
-    yPt = column(simusFR,i)
-    ax.scatter(xPt,yPt,s=10)
-    # to verify the maximum value to plot even with the points
-    if (max(yPt) > ymax) :
-      ymax = max(yPt)
-    
     # To change to boxplots    
     #ax.boxplot(margin_data)
-
+  
   # removing labels from x
   ax.set_xticklabels([])
-
+  
+  ax.set_xlim([0,xmax + 10])       # with some margin  
   ax.set_ylim([-5,ymax + 10])       # with some margin
-  fig.canvas.set_window_title("Firing Rates margin for model " +str(model))
+  fig.canvas.set_window_title("Firing Rates margin for multiple models ")
   
   plt.show()
 
@@ -256,4 +231,4 @@ table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.
 
 plot_inDegrees_boarders_table(table,'0')
 '''
-plot_acceptable_margin(2)
+plot_acceptable_margin_all()
