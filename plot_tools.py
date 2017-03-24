@@ -20,7 +20,7 @@ According to the norm param, the function will normalize
 from certain ranges in FRRNormal to 0-1 the input in frlist.
 '''
 def normalize(frlist,norm=False) :
-  if (not norm or len(n_boarders)!=len(frlist)) :
+  if (not norm or len(FRRNormal)!=len(frlist)) :
     return frlist
   new_list = [0] * 5
   print "normalizing"
@@ -38,7 +38,6 @@ def can_plot(lineFR, antag, norm) :
   # the antagonist specifications
   antN, antInj = lineFR[1:3]
   antStr = antN + "_" + antInj
-
   if (antag is None and 'none' in antN) :
     lineFR = normalize(map(float,lineFR[3:-1]),norm)  # firing rates values
     antStr = 'none'
@@ -208,10 +207,8 @@ def plot_margin_boxes(ax, rect_size, antag) :
   global NUCLEI,FRRNormal, FRRAnt
   
   rect_size = 0.1
-  nbNuclei = len(NUCLEI)
-
+  
   # getting the ordinate max range
-  xmax = 0
   ymax = 0
   
   # to boxplots
@@ -285,11 +282,10 @@ def plot_margin_boxes(ax, rect_size, antag) :
       # setting a label on the rectangle
       plt.text(x + 0.05, -10, N, ha="center", family='sans-serif', size=14)
     ymax += 10
-  xmax = nbNuclei * 2 * rect_size        # at the end of the loop, x will get the last
   # removing labels from x
   ax.set_xticklabels([])
 
-  return (xmax,ymax)
+  return ymax
 
 '''
 Acceptable margin for every tested model which appear in firingRates.csv
@@ -419,8 +415,8 @@ def plot_simu_points(allFiringRates, ax, norm, antag, model, rect_size, xyMax) :
   global NUCLEI, FRRNormal
 
   xmax,ymax = xyMax
-  nbNuclei = len(NUCLEI)
-
+  
+  print "tab :",xyMax
   model_color = {}              # dico[model] = color for plot
   # if we want to plot every models
   if (model is None) : 
@@ -439,8 +435,7 @@ def plot_simu_points(allFiringRates, ax, norm, antag, model, rect_size, xyMax) :
     anta_shape = {antag : '^'}
     # by default
     mark = anta_shape[antag]
-
-
+  
   for lineSimu in allFiringRates :
     lineSimu = lineSimu.split(",")       # from a line string to a string array
 
@@ -450,7 +445,6 @@ def plot_simu_points(allFiringRates, ax, norm, antag, model, rect_size, xyMax) :
       continue
     else :
       antStr, listFR = can_plot_res
-    
     # the model number
     model_num = int(re.findall('\d+',lineSimu[0])[0])
     if (model is None) :
@@ -472,7 +466,8 @@ def plot_simu_points(allFiringRates, ax, norm, antag, model, rect_size, xyMax) :
     
     # x list coordinates
     rnd = random.random()/10 + 1
-    x_tab = np.arange(rect_size,xmax,rect_size*2) * rnd #np.linspace(rect_size*rnd, xmax/rnd, nbNuclei)
+    print "rect size and xmax -> ",rect_size,xmax
+    x_tab = np.arange(rect_size,xmax,rect_size*2) * rnd
     print "X = ",x_tab," Y = ", listFR,"color = ",color
     
     if not model_num in models_labels :
@@ -481,10 +476,10 @@ def plot_simu_points(allFiringRates, ax, norm, antag, model, rect_size, xyMax) :
     else :
       ax.scatter(x_tab,listFR, c=color,marker=mark)
     # getting the maximum y possible :
-    mx = max(lineSimu)
+    mx = max(listFR)
     if (ymax<mx) :
       ymax = mx
-    print ymax, type(ymax)
+    
   return ymax
   
 '''
@@ -503,14 +498,18 @@ def plot_margins_and_simus(norm=False, antag=None, model=None) :
   fig = plt.figure()#figsize=(rect_size*nbNuclei*10, 5))
   ax = fig.add_subplot(111)
   
+  nbNuclei = len(NUCLEI)
+
   rect_size = 0.1
-  xmax = ymax = 0
+  xmax = nbNuclei * 2 * rect_size        # at the end of the loop, x will get the last
+  ymax = 0
   #### if we dont want a normalized plot lets draw the limit boxes
   if not norm :
-    xmax, ymax = plot_margin_boxes(ax, rect_size, antag)
+    ymax = plot_margin_boxes(ax, rect_size, antag)
     ax.set_ylabel("Firing Rates (Hz)")
-  # otherwise lets label the x axis
+  # otherwise (normalized) lets label the x axis
   else :
+    ymax = 1
     ax.set_xticklabels(NUCLEI)
     ax.set_yticklabels(["Min","Max"])
     ax.set_ylabel("Relative Margin")
@@ -547,7 +546,7 @@ def plot_margins_and_simus(norm=False, antag=None, model=None) :
   fig.canvas.set_window_title("Firing Rates margin" + title)
   
   # showing plot
-  #plt.show()
+  plt.show()
 
 ### Tests
 '''
@@ -557,4 +556,4 @@ plot_inDegrees_boarders_table(table,'0')
 '''
 
 #plot_acceptable_margin_all()
-plot_margins_and_simus(norm=False, model=9)
+plot_margins_and_simus(norm=True, model=None)
