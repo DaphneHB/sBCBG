@@ -9,6 +9,8 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.lines as mlines
+import matplotlib.ticker as ticker
 from matplotlib import colors as mcolors
 
 from LGneurons import NUCLEI, nbSim, FRRNormal, dataPath, FRRAnt, recType
@@ -23,7 +25,6 @@ def normalize(frlist,norm=False) :
   if (not norm or len(FRRNormal)!=len(frlist)) :
     return frlist
   new_list = [0] * 5
-  print "normalizing"
   global NUCLEI
   for ind,N in enumerate(NUCLEI) :
     new_list[ind] = (frlist[ind]-FRRNormal[N][0])/float(FRRNormal[N][1] - FRRNormal[N][0])
@@ -36,9 +37,9 @@ Return None or (antag string, [FRs])
 '''
 def can_plot(lineFR, antag, norm) :
   # the antagonist specifications
-  antN, antInj = lineFR[1:3]
-  antStr = antN + "_" + antInj
-  if (antag is None and 'none' in antN) :
+  antN, antInj = map(lambda x : re.sub(' ','',x), lineFR[1:3])
+  antStr = antN + "_" + antInj.rstrip()
+  if (antag is None or antag == 'all') and ('none' in antN) :
     lineFR = normalize(map(float,lineFR[3:-1]),norm)  # firing rates values
     antStr = 'none'
   elif (antag == 'all' and not 'none' in antN) or (antag == antStr):
@@ -191,101 +192,6 @@ def plot_acceptable_margin_oneModel (model=None) :
   
   plt.show()
 
-'''
-Add the plotted margin boxis to the axis ax according to antag inj
-If there is no antag inj : every boxes are plot
-if we want to plot a specific antag inj only one box is plotted
-if we want to plot every antag inj : no box is plot
-Return the global xmax and ymax
-'''
-def plot_margin_boxes(ax, rect_size, antag) :
-  
-  def labeling(xy, h, text):
-    y = xy[1] + h + 1  # shift y-value for label so that it's above the rect
-    plt.text(xy[0] + 0.05, y, text, ha="center", family='sans-serif', size=14)
-    
-  global NUCLEI,FRRNormal, FRRAnt
-  
-  rect_size = 0.1
-  
-  # getting the ordinate max range
-  ymax = 0
-  
-  # to boxplots
-  #margin_data = list()
-  if (antag is None) :
-    ## plotting every box margin
-    for i,N in enumerate(NUCLEI) :
-      #margin_data.append([FRRNormal[N][0],FRRNormal[N][1]])
-    
-      # saving the y range
-      if (ymax < FRRNormal[N][1]) :
-        ymax = FRRNormal[N][1]
-        
-      x = 2*i*rect_size+rect_size
-      y = FRRNormal[N][0]
-      w = rect_size
-      h = FRRNormal[N][1]-FRRNormal[N][0]
-      
-      # drawing a rectangle as the acceptable intervalle
-      ax.add_patch(
-          patches.Rectangle(
-              # letting some margin
-              (x, y),           # (x,y) position of the bottom left
-              w,                # width
-              h,                # height
-              fill=False,       # remove background
-          )
-      )
-      # setting a label on the rectangle
-      labeling([x,y],h,N)
-      
-      # To change to boxplots
-      #ax.boxplot(margin_data)
-  elif (antag == "all") :
-    # getting the max possible value of y/x according to all antagonist injections
-    for antN in FRRAnt.keys() :
-      # for every possible injection
-      for mn,mx in FRRAnt[antN].values() :
-        # comparing max values
-        if (ymax < mx) :
-          ymax = mx
-    ymax += 10
-    ## plotting every nuclei name
-    for i,N in enumerate(NUCLEI) :
-      x = 2*i*rect_size+rect_size      
-      # setting a label on the rectangle
-      plt.text(x + 0.05, -8, N, ha="center", family='sans-serif', size=10)
-      
-  else : # a specific antag
-    # showing the GPi/e box only with a certain y margin
-    antN, antInj = antag.split("_") # the antag string is Nucleus_injection form
-    mn,mx = FRRAnt[antN][antInj]
-    if (ymax < mx) :
-      ymax = mx
-    ## plotting every nuclei name
-    for i,N in enumerate(NUCLEI) :
-      x = 2*i*rect_size+rect_size
-      if (N==antN) :
-        # plotting the box for the injection site
-        h = mx - mn
-        # drawing a rectangle as the acceptable intervalle
-        ax.add_patch(
-            patches.Rectangle(
-                # letting some margin
-                (x, mx),           # (x,y) position of the bottom left
-                rect_size,                # width
-                h,                # height
-                fill=False,       # remove background
-            )
-          )
-      # setting a label on the rectangle
-      plt.text(x + 0.05, -10, N, ha="center", family='sans-serif', size=14)
-    ymax += 10
-  # removing labels from x
-  ax.set_xticklabels([])
-
-  return ymax
 
 '''
 Acceptable margin for every tested model which appear in firingRates.csv
@@ -393,6 +299,105 @@ def plot_acceptable_margin_all () :
   fig.canvas.set_window_title("Firing Rates margin for multiple models ")
   
   plt.show()
+  
+
+'''
+Add the plotted margin boxis to the axis ax according to antag inj
+If there is no antag inj : every boxes are plot
+if we want to plot a specific antag inj only one box is plotted
+if we want to plot every antag inj : no box is plot
+Return the global xmax and ymax
+'''
+def plot_margin_boxes(ax, rect_size, antag) :
+  
+  def labeling(xy, h, text):
+    y = xy[1] + h + 1  # shift y-value for label so that it's above the rect
+    plt.text(xy[0] + 0.05, y, text, ha="center", family='sans-serif', size=14)
+    
+  global NUCLEI,FRRNormal, FRRAnt
+  
+  rect_size = 0.1
+  
+  # getting the ordinate max range
+  ymax = 0
+  
+  # to boxplots
+  #margin_data = list()
+  if (antag is None) :
+    ## plotting every box margin
+    for i,N in enumerate(NUCLEI) :
+      #margin_data.append([FRRNormal[N][0],FRRNormal[N][1]])
+    
+      # saving the y range
+      if (ymax < FRRNormal[N][1]) :
+        ymax = FRRNormal[N][1]
+        
+      x = 2*i*rect_size+rect_size
+      y = FRRNormal[N][0]
+      w = rect_size
+      h = FRRNormal[N][1]-FRRNormal[N][0]
+      
+      # drawing a rectangle as the acceptable intervalle
+      ax.add_patch(
+          patches.Rectangle(
+              # letting some margin
+              (x, y),           # (x,y) position of the bottom left
+              w,                # width
+              h,                # height
+              fill=False,       # remove background
+          )
+      )
+      # setting a label on the rectangle
+      labeling([x,y],h,N)
+      
+      # To change to boxplots
+      #ax.boxplot(margin_data)
+  elif (antag == "all") :
+    # getting the max possible value of y/x according to all antagonist injections
+    for antN in FRRAnt.keys() :
+      # for every possible injection
+      for mn,mx in FRRAnt[antN].values() :
+        # comparing max values
+        if (ymax < mx) :
+          ymax = mx
+    ymax += 10
+    ## plotting every nuclei name
+    for i,N in enumerate(NUCLEI) :
+      x = 2*i*rect_size+rect_size      
+      # setting a label on the rectangle
+      plt.text(x + 0.05, -12, N, ha="center", family='sans-serif', size=10)
+      
+  else : # a specific antag
+    # showing the GPi/e box only with a certain y margin
+    antN, antInj = antag.split("_") # the antag string is Nucleus_injection form
+    mnFR,mxFR = FRRAnt[antN][antInj]
+    if (ymax < mxFR) :
+      ymax = mxFR
+    ## plotting every nuclei name
+    for i,N in enumerate(NUCLEI) :
+      x = 2*i*rect_size+rect_size
+      if (N==antN) :
+        # plotting the box for the injection site
+        h = mxFR - mnFR
+        # drawing a rectangle as the acceptable intervalle
+        ax.add_patch(
+            patches.Rectangle(
+                # letting some margin
+                (x, mxFR),           # (x,y) position of the bottom left
+                rect_size,                # width
+                h,                # height
+                fill=False,       # remove background
+            )
+          )
+        ymax = mxFR + h
+      # setting a label on the rectangle
+      plt.text(x + 0.05, -12, N, ha="center", family='sans-serif', size=14)
+    ymax += 10
+  # removing labels from x
+  ax.set_xticklabels([])
+
+  return ymax
+  
 
 '''
 Plot every point of each simulation satisfying the antag and model params
@@ -416,7 +421,6 @@ def plot_simu_points(allFiringRates, ax, norm, antag, model, rect_size, xyMax) :
 
   xmax,ymax = xyMax
   
-  print "tab :",xyMax
   model_color = {}              # dico[model] = color for plot
   # if we want to plot every models
   if (model is None) : 
@@ -438,7 +442,6 @@ def plot_simu_points(allFiringRates, ax, norm, antag, model, rect_size, xyMax) :
   
   for lineSimu in allFiringRates :
     lineSimu = lineSimu.split(",")       # from a line string to a string array
-
     # either None or (antag, list FR)
     can_plot_res = can_plot(lineSimu,antag,norm)
     if (can_plot_res is None) :
@@ -465,34 +468,53 @@ def plot_simu_points(allFiringRates, ax, norm, antag, model, rect_size, xyMax) :
         NUM_MARK += 1
     
     # x list coordinates
-    rnd = random.random()/10 + 1
-    print "rect size and xmax -> ",rect_size,xmax
-    x_tab = np.arange(rect_size,xmax,rect_size*2) * rnd
-    print "X = ",x_tab," Y = ", listFR,"color = ",color
-    
-    if not model_num in models_labels :
-      models_labels.append(model_num)
-      ax.scatter(x_tab,listFR, c=color,label='model '+str(models_labels),marker=mark)
-    else :
-      ax.scatter(x_tab,listFR, c=color,marker=mark)
+    rnd = random.random()/10
+    x_tab = np.arange(rect_size,xmax,rect_size*2) + rnd
+    #print "X = ",x_tab," Y = ", listFR,"color = ",color
+      
+    ax.scatter(x_tab,listFR, c=color,marker=mark)
     # getting the maximum y possible :
     mx = max(listFR)
     if (ymax<mx) :
       ymax = mx
     
-  return ymax
+  legnd = []
+  if model is None :
+    mod_patches = []
+    for m,cl in model_color.items() :
+      mod_patches.append(patches.Patch(color=cl,label='model '+str(m)))
+    legnd += mod_patches
+  if not antag is None :
+    ant_lgd = []
+    for a,mk in anta_shape.items() :
+      ant_lgd.append(mlines.Line2D([],[],color='black', marker=mk,markersize=10,label='ant ' + str(a) ))
+    legnd += ant_lgd
+  return legnd,ymax
   
 '''
 Works on the assumption that every simu firing rates
 are reported in a allFiringRates.csv global file in the global log directory
 the norm param decide whether or not we should have a normalization of the y axis
 '''
-def plot_margins_and_simus(norm=False, antag=None, model=None) :
+def plot_margins_and_simus(filename=None,norm=False, antag=None, model=None) :
   global NUCLEI
   
   # antag & norm isnt possible
   if antag :
     norm = False  # setting norm to false auto
+  
+  # retrieving data in the input file allFiringRates.csv
+  if filename is None :
+    filename = 'allFiringRates'
+  allFRfile = open('log/' + filename + ".csv",'r')
+  allFRdata = allFRfile.readlines()
+  allFRfile.close()
+  # retrieving only the simu with the choosen model if there is
+  if (not model is None) :
+    allFRdata = filter(lambda x : ("#" + str(model)) in x ,allFRdata)
+  if allFRdata == [] :
+    print "---------- ERROR : No corresponding model simulated"
+    return 1
   
   # getting the plot figure to fill
   fig = plt.figure()#figsize=(rect_size*nbNuclei*10, 5))
@@ -503,33 +525,30 @@ def plot_margins_and_simus(norm=False, antag=None, model=None) :
   rect_size = 0.1
   xmax = nbNuclei * 2 * rect_size        # at the end of the loop, x will get the last
   ymax = 0
+  ax.set_xticklabels('')
   #### if we dont want a normalized plot lets draw the limit boxes
   if not norm :
     ymax = plot_margin_boxes(ax, rect_size, antag)
+    ax.set_xticklabels([])
     ax.set_ylabel("Firing Rates (Hz)")
   # otherwise (normalized) lets label the x axis
   else :
     ymax = 1
-    ax.set_xticklabels(NUCLEI)
-    ax.set_yticklabels(["Min","Max"])
+    # Customize minor tick labels
+    N_labels = ['' if e % 2 == 0 else NUCLEI[e/2] for e in range(nbNuclei * 2)] 
+    ax.set_xticks(np.arange(0,xmax,rect_size), minor=True)
+    ax.set_xticklabels(N_labels,minor=True)
+    ax.set_yticks([0,1])
+    ax.set_yticklabels(["Min","Max"])  
     ax.set_ylabel("Relative Margin")
-
-  #### plotting simu points
-  # retrieving data in the input file allFiringRates.csv
-  allFRfile = open('log/allFiringRates.csv','r')
-  allFRdata = allFRfile.readlines()
-  allFRfile.close()
-  # retrieving only the simu with the choosen model if there is
-  if (not model is None) :
-    allFRdata = filter(lambda x : ("#" + str(model)) in x ,allFRdata)
   
-  ymax = plot_simu_points(allFRdata, ax, norm, antag, model, rect_size, [xmax,ymax])
+  lgnd,ymax = plot_simu_points(allFRdata, ax, norm, antag, model, rect_size, [xmax,ymax])
   #### parametrizing the plot
-  ax.legend()
+  ax.legend(handles=lgnd,loc='upper center',bbox_to_anchor=(0.5,1.),ncol=3,fontsize='x-small').draggable()
   # legend x and y axis  
   ax.set_xlabel("BG Nuclei")
     
-  ax.set_xlim([0,xmax + rect_size*10])       # with some margin  
+  ax.set_xlim([0,xmax + rect_size])       # with some margin  
   if (not norm) :
     ax.set_ylim([-5,ymax + 10])       # with some margin
   # setting the name according to the params
@@ -542,7 +561,7 @@ def plot_margins_and_simus(norm=False, antag=None, model=None) :
     title += " (model" + str(model) + ")"
   if (not antag is None) :
     title += " - antagonist injection"
-  
+  ax.grid()
   fig.canvas.set_window_title("Firing Rates margin" + title)
   
   # showing plot
@@ -556,4 +575,4 @@ plot_inDegrees_boarders_table(table,'0')
 '''
 
 #plot_acceptable_margin_all()
-plot_margins_and_simus(norm=True, model=None)
+#plot_margins_and_simus(antag=None,model=9)

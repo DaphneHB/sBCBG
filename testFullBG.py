@@ -215,6 +215,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
   print s
   text.append(s+'\n')
   if antagInjectionSite == 'none':
+    frstr += "none , "
     for N in NUCLEI:
       strTestPassed = 'NO!'
       #print "nest status ?????????????????? \n\t",nest.GetStatus(spkDetect[N],)[0]
@@ -228,6 +229,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
       print s
       text.append(s+'\n')
   else:
+    frstr += str(antag) + " , "
     for N in NUCLEI:
       expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*simDuration) * 1000
       if N == antagInjectionSite:
@@ -270,7 +272,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
     for N in NUCLEI:
       nest.raster_plot.from_device(spkDetect[N],hist=True,title=N+displayStr)
 
-    nest.raster_plot.show()
+    #nest.raster_plot.show()
 
   return score, 5 if antagInjectionSite == 'none' else 1
 
@@ -336,13 +338,13 @@ def main():
   score = np.zeros((2))
   score += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=True)
 
-  
+  '''
   for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
     score += checkAvgFR(params=params,antagInjectionSite='GPe',antag=a)
 
   for a in ['All','AMPA','NMDA+AMPA','NMDA','GABAA']:
     score += checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
-  
+  '''
   #-------------------------
   print "******************"
   print "* Score:",score[0],'/',score[1]
@@ -361,10 +363,6 @@ def main():
   res = open('score.txt','w')
   res.writelines(str(score[0])+'\n')
   res.close()
-  
-  global inDegree_boarders  
-  import plot_tools as pltT
-  #pltT.plot_inDegrees_boarders_table(inDegree_boarders,params['LG14modelID'])
 
 #---------------------------
 if __name__ == '__main__':

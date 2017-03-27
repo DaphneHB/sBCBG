@@ -43,7 +43,7 @@ interactive = False
 params = {'nbcpu':    %s,
           'nbCh' :    %d,
           'LG14modelID': %2d,
-          'whichTest': %s, # which test was used to generate the log
+          'whichTest': '%s', # which test was used to generate the log
           'nbMSN':    %f,
           'nbFSI':    %f,
           'nbSTN':    %f,
@@ -64,8 +64,8 @@ params = {'nbcpu':    %s,
           'inDegCMPfMSN':  1.,
           'inDegFSIMSN':  30., # according to Humphries et al. 2010, 30-150 FSIs->MSN
           'inDegMSNMSN':  70., # according to Koos et al. 2004, cited by Humphries et al., 2010, on avg 3 synpase per MSN-MSN connection
-          'inDegSTNMSN':   0.,
-          'inDegGPeMSN':   0.,
+          'inDegSTNMSN':   0.001,
+          'inDegGPeMSN':   0.002,
           'inDegCSNFSI':  50.,
           'inDegPTNFSI':   1.,
           'inDegSTNFSI':   2.,
@@ -186,7 +186,7 @@ iegpi=12.
 # with which additional parameters?
 testedParameters={'durationH':    '04',
                   'durationMin':  '00',
-                  'nbcpu':        '6',
+                  'nbcpu':        '8',
                   'whichTest':    'testFullBG',
                   'nbch': 1,
                   'lg14modelid':  2,
