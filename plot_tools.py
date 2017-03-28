@@ -4,6 +4,7 @@ Created on Mon Mar 13 17:32:40 2017
 
 @author: daphnehb
 """
+import os
 import re
 import random
 import numpy as np
@@ -101,205 +102,6 @@ def plot_inDegrees_boarders_table(table_dict, model, filename=None) :
   if (not filename is None) :
     plt.savefig(filename + ".txt")
 
-
-'''
-Acceptable margin for a specific model
-To plot the acceptable intervalle of firing rates and the obtained FR
-'''
-def plot_acceptable_margin_oneModel (model=None) :
-  
-  def labeling(xy, h, text):
-    y = xy[1] + h + 1  # shift y-value for label so that it's above the rect
-    plt.text(xy[0] + 0.05, y, text, ha="center", family='sans-serif', size=14)
-    
-  def column(matrix, i):
-    return [float(row[i]) for row in matrix]    # from string list to float list
-  
-  global NUCLEI,FRRNormal
-  
-  simusFR = list()
-  # getitng the different existing firing rates in the log/firingRates.csv file
-  firingRatesFile=open(dataPath+'firingRates.csv','r')
-  allFiringRates = firingRatesFile.readlines()
-  firingRatesFile.close()
-  # for each simulation done for this specific model
-  # recording in simusFR table the firing rates
-  for lineSimu in allFiringRates :
-    simuCases = lineSimu.split(",")
-    # if it is the good model
-    if (("#" + str(model)) in simuCases[0]) :
-      # for no antagonnist injection (normal)
-      if ("none" in simuCases[1]) :
-        simusFR.append(simuCases[2:-1])     # removing the last \n
-  nbSimus = len(simusFR)
-    
-  rect_size = 0.1
-  nbNuclei = len(NUCLEI)
-  
-  fig=plt.figure(figsize=(rect_size*nbNuclei*10, 10))
-  ax = fig.add_subplot(111)
-  
-  # getting the ordinate max range
-  ymax = -10
-  
-  # to boxplots
-  #margin_data = list()
-  
-  for i,N in enumerate(NUCLEI) :
-    #margin_data.append([FRRNormal[N][0],FRRNormal[N][1]])
-  
-    # saving the y range
-    if (ymax < FRRNormal[N][1]) :
-      ymax = FRRNormal[N][1]
-      
-    x = 2*i*rect_size+rect_size
-    y = FRRNormal[N][0]
-    w = rect_size
-    h = FRRNormal[N][1]-FRRNormal[N][0]
-    
-    # drawing a rectangle as the acceptable intervalle
-    ax.add_patch(
-        patches.Rectangle(
-            # letting some margin
-            (x, y),           # (x,y) position of the bottom left
-            w,                # width
-            h,                # height
-            fill=False,       # remove background
-        )
-    )
-    # setting a label on the rectangle
-    labeling([x,y],h,N)
-    
-    # for each simulation done and registered
-    # plotting the points
-    # getting some random x around a certain value (for legibility)
-    xPt = np.random.normal(x + w/2, rect_size/5, nbSimus)       # mean loc, scale/variance, nb
-    # getting the corresponding column
-    yPt = column(simusFR,i)
-    ax.scatter(xPt,yPt,s=10)
-    # to verify the maximum value to plot even with the points
-    if (max(yPt) > ymax) :
-      ymax = max(yPt)
-    
-    # To change to boxplots    
-    #ax.boxplot(margin_data)
-
-  # removing labels from x
-  ax.set_xticklabels([])
-
-  ax.set_ylim([-5,ymax + 10])       # with some margin
-  fig.canvas.set_window_title("Firing Rates margin for model " +str(model))
-  
-  plt.show()
-
-
-'''
-Acceptable margin for every tested model which appear in firingRates.csv
-To plot the acceptable intervalle of firing rates and the obtained FR
-'''
-def plot_acceptable_margin_all () :
-  NUM_COLOR = 1
-  
-  def labeling(xy, h, text):
-    y = xy[1] + h + 1  # shift y-value for label so that it's above the rect
-    plt.text(xy[0] + 0.05, y, text, ha="center", family='sans-serif', size=14)
-    
-  def column(matrix, i):
-    return [float(row[i]) for row in matrix]    # from string list to float list
-  
-  global NUCLEI,FRRNormal
-  
-  rect_size = 0.1
-  nbNuclei = len(NUCLEI)
-  
-  fig=plt.figure()#figsize=(rect_size*nbNuclei*10, 5))
-  ax = fig.add_subplot(111)
-  
-  # getting the ordinate max range
-  xmax = 0
-  ymax = 0
-  
-  # to boxplots
-  #margin_data = list()
-  
-  ## plotting every box margin
-  for i,N in enumerate(NUCLEI) :
-    #margin_data.append([FRRNormal[N][0],FRRNormal[N][1]])
-  
-    # saving the y range
-    if (ymax < FRRNormal[N][1]) :
-      ymax = FRRNormal[N][1]
-      
-    x = 2*i*rect_size+rect_size
-    y = FRRNormal[N][0]
-    w = rect_size
-    h = FRRNormal[N][1]-FRRNormal[N][0]
-    
-    # drawing a rectangle as the acceptable intervalle
-    ax.add_patch(
-        patches.Rectangle(
-            # letting some margin
-            (x, y),           # (x,y) position of the bottom left
-            w,                # width
-            h,                # height
-            fill=False,       # remove background
-        )
-    )
-    # setting a label on the rectangle
-    labeling([x,y],h,N)
-    xmax = x+rect_size        # at the end of the loop, x will get the last
-    
-    # To change to boxplots    
-    #ax.boxplot(margin_data)
-
-  # getitng the different existing firing rates in the log/firingRates.csv file
-  firingRatesFile=open(dataPath+'firingRates.csv','r')
-  allFiringRates = firingRatesFile.readlines()
-  firingRatesFile.close()
-  
-  model_color = {}              # dico[model] = color for plot
-  plot_colors = mcolors.cnames.keys()     # list of colors in matplotlib
-  models_labels = []    # to remember which model was labeled
-  
-  ## plotting every simu (generating a color by simu)
-  for lineSimu in allFiringRates :
-    lineSimu = lineSimu.split(",")       # from a line string to a string array
-    simu_num = int(re.findall('\d+',lineSimu[0])[0])
-    print "Simu num : ",simu_num
-    # getting the (new) color for this model
-    if (model_color.has_key(simu_num)) :
-        color = model_color[simu_num]
-    else :
-        color = plot_colors[NUM_COLOR]
-        model_color[simu_num] = color
-        NUM_COLOR += 1
-    # retreiving the normal simu
-    if ('none' in lineSimu[1]) :
-      lineSimu = map(float,lineSimu[2:-1])
-      rnd = random.random() + 1
-      x_tab = np.linspace(rect_size*rnd, xmax/rnd, nbNuclei)
-      print "X = ",x_tab," Y = ", lineSimu,"color = ",color
-      if not simu_num in models_labels :
-        models_labels.append(simu_num)
-        ax.scatter(x_tab,lineSimu, c=color,label='model '+str(models_labels),marker='s')
-      else :
-        ax.scatter(x_tab,lineSimu, c=color,marker='s')
-    # getting the maximum y possible :
-    mx = max(lineSimu)
-    if (ymax<mx) :
-      ymax = mx
-      
-  # removing labels from x
-  ax.set_xticklabels([])
-  
-  ax.legend()
-  
-  ax.set_xlim([0,xmax + rect_size*10])       # with some margin  
-  ax.set_ylim([-5,ymax + 10])       # with some margin
-  fig.canvas.set_window_title("Firing Rates margin for multiple models ")
-  
-  plt.show()
-  
 
 '''
 Add the plotted margin boxis to the axis ax according to antag inj
@@ -567,6 +369,96 @@ def plot_margins_and_simus(filename=None,norm=False, antag=None, model=None) :
   # showing plot
   plt.show()
 
+'''
+Plotting number of simulations which get a score > score param
+for each value of variable for the nucleus
+nucleus is in NUCLEI
+varible is either Ie or G
+'''
+def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=None) :
+  NUM_COL = 0
+  global NUCLEI
+  if not nucleus in NUCLEI :
+    print "------------ ERROR : Wrong nucleus"
+    return 1
+  if not ("Ie"==variable or "G"==variable) :
+    print "------------ ERROR : Wrong variable name [" + variable + "]"
+    return 1
+   
+  val_tab = []
+  score_col = {}
+  plot_colors = mcolors.cnames.keys()     # list of colors in matplotlib
+  n_var = variable + nucleus
+  varN_values = {}   # dict {score : {val : nb}}
+  model_pattern = re.compile("LG14modelID.*:\ *(\d+).")
+  paramVal_pattern = re.compile(n_var + ".*:\ *(\d+).*")
+  ################################## TODO review
+  ### generate plot 
+  for fName in os.listdir(dataPath) :
+    dirPath = os.path.join(dataPath,fName)
+    if os.path.isdir(dirPath) and fName.startswith("2017") :
+      with open("score.txt","r") as scoreFile :
+        obt_score = float(scoreFile.readline().rstrip())
+      if obt_score < float(score) :
+        continue
+      # If the score is ok
+      # lets check the model nb by getting the modelParams
+      with open(dirPath+"/modelParams.py", 'r') as paramsFile :
+        Paramsdata = paramsFile.readlines()
+      # only getting the results of the expected model
+      if (not model is None) :
+        mod = int(model_pattern.findall(filter(lambda x : model_pattern.search(x), Paramsdata)[0])[0])
+        if (mod != model) :
+          continue
+      # get value
+      try :
+        val = int(paramVal_pattern.findall(filter(lambda x : paramVal_pattern.search(x), Paramsdata)[0])[0])
+        val_tab.append(val)
+      except IndexError: # if there were no result : the variable name is wrong
+        print "------------- ERROR : Wrong variable name [" + n_var + "]"
+        return 1
+      # extending the nb
+      if (not varN_values.has_key(obt_score)) :
+        varN_values[obt_score] = {val : 1} #dict(zip([float(x) for x in range(score,15)],[0.] * (15-score)))   # initializing every possible score for this value
+      elif (varN_values[obt_score].has_key(val)) :
+        varN_values[obt_score][val] += 1
+      else :
+        varN_values[obt_score][val] = 1
+      # score color
+      if (not score_col.has_key(obt_score)) :
+        score_col[obt_score] = plot_colors[NUM_COL]
+        
+        
+  # plot
+  print varN_values
+  width = 0.3
+  plt_lgd = {}
+  for obt_score,valsNb in varN_values.items() :
+    # creating the unexisting vals ordering the list of vals
+    val_list = []
+    for v in val_tab :
+      if not v in valsNb :
+        val_list.append(0)
+      else :
+        val_list.append(valsNb[v])
+    p = plt.bar(val_tab,val_list,width, color=score_col[obt_score])
+    plt_lgd [p[0]] = obt_score
+  # displaying
+  plt.xlabel(n_var + " values")
+  plt.ylabel('Number of simulations')
+  plt.legend(plt_lgd.keys(),plt_lgd.values(), title="Scores")
+  plt.title("Score of simulations according to the " + n_var + " param value")
+  plot_margin = 0.25
+
+  x0, x1, y0, y1 = plt.axis()
+  plt.axis((x0 - plot_margin,
+          x1 + plot_margin,
+          y0 - plot_margin,
+          y1 + plot_margin))
+  plt.show()
+  
+  
+  
 ### Tests
 '''
 table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.65986013986014, 31696.91076923077), 'GPe->GPi': (1.4744055944055943, 23.59048951048951), 'GPe->MSN': (0.0015184513006654568, 0.14121597096188748), 'GPe->GPe': (0.84, 31.919999999999998), 'CMPf->GPe': (0.3426294820717131, 15.760956175298803), 'CMPf->GPi': (0.6013986013986014, 83.59440559440559), 'CMPf->FSI': (0.16165413533834586, 122.21052631578947), 'PTN->FSI': (-1, 5.0), 'CMPf->STN': (1.1168831168831168, 64.77922077922078), 'STN->MSN': (0.0004949334543254689, 0.05394774652147611), 'GPe->STN': (3.25974025974026, 61.935064935064936), 'STN->GPe': (0.2546215139442231, 74.34948207171315), 'STN->GPi': (0.38769230769230767, 63.96923076923076), 'CMPf->MSN': (0.003251663641863279, 7.244706594071385), 'FSI->FSI': (1.0, 140.0), 'CSN->MSN': (-1, 318.0), 'PTN->MSN': (-1, 5.0), 'FSI->MSN': (0.020114942528735632, 43.689655172413794), 'MSN->MSN': (1.0, 509.0), 'PTN->STN': (-1, 262.0), 'CSN->FSI': (-1, 489.0), 'GPe->FSI': (0.07548872180451129, 36.46105263157895)}
@@ -574,5 +466,4 @@ table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.
 plot_inDegrees_boarders_table(table,'0')
 '''
 
-#plot_acceptable_margin_all()
-#plot_margins_and_simus(antag=None,model=9)
+plot_score_ratio("Ie","GPi",dataPath="data")

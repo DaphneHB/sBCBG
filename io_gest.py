@@ -56,7 +56,7 @@ The output file contains firing rates of multiples simulations
 By default outFile is allFiringRates.csv
 and the dataPath is the current directory
 '''
-def concat_data(dataPath="", outFile="allFiringRates", model=None, score=0, limit=-1) :
+def concat_data(dataPath=os.getcwd(), outFile="allFiringRates", model=None, score=0, limit=-1) :
   #dataPath = os.path.join(os.getcwd(),dataPath)
   modelTitle = "every models" if model is None else "model "+str(model)
   print "+++++++++++ Concataning Firing Rates for simulations of "+modelTitle+" where score >= "+str(score)
@@ -69,9 +69,6 @@ def concat_data(dataPath="", outFile="allFiringRates", model=None, score=0, limi
     if os.path.isdir(dirPath) and fName.startswith("2017") :
       with open("score.txt","r") as scoreFile :
         obt_score = float(scoreFile.readline().rstrip())
-      #print fName,obt_score
-      if ('02807' in fName) :
-        print obt_score
       if obt_score < float(score) :
         continue
       # If the score is ok
@@ -91,11 +88,11 @@ def concat_data(dataPath="", outFile="allFiringRates", model=None, score=0, limi
     out.writelines(allFRdata)
   print "End of concatenation. log/"+outFile+".csv created"
         
-    
+
   
 '''
 table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.65986013986014, 31696.91076923077), 'GPe->GPi': (1.4744055944055943, 23.59048951048951), 'GPe->MSN': (0.0015184513006654568, 0.14121597096188748), 'GPe->GPe': (0.84, 31.919999999999998), 'CMPf->GPe': (0.3426294820717131, 15.760956175298803), 'CMPf->GPi': (0.6013986013986014, 83.59440559440559), 'CMPf->FSI': (0.16165413533834586, 122.21052631578947), 'PTN->FSI': (-1, 5.0), 'CMPf->STN': (1.1168831168831168, 64.77922077922078), 'STN->MSN': (0.0004949334543254689, 0.05394774652147611), 'GPe->STN': (3.25974025974026, 61.935064935064936), 'STN->GPe': (0.2546215139442231, 74.34948207171315), 'STN->GPi': (0.38769230769230767, 63.96923076923076), 'CMPf->MSN': (0.003251663641863279, 7.244706594071385), 'FSI->FSI': (1.0, 140.0), 'CSN->MSN': (-1, 318.0), 'PTN->MSN': (-1, 5.0), 'FSI->MSN': (0.020114942528735632, 43.689655172413794), 'MSN->MSN': (1.0, 509.0), 'PTN->STN': (-1, 262.0), 'CSN->FSI': (-1, 489.0), 'GPe->FSI': (0.07548872180451129, 36.46105263157895)}
 
 write_inDegree_table("0",table,"","test_table")
 '''
-#concat_data(dataPath="data",score=3)
+#concat_data()
