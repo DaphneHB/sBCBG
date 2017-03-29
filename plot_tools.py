@@ -375,7 +375,7 @@ for each value of variable for the nucleus
 nucleus is in NUCLEI
 varible is either Ie or G
 '''
-def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=None) :
+def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=None, axis=None) :
   NUM_COL = 0
   global NUCLEI
   if not nucleus in NUCLEI :
@@ -397,7 +397,7 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
   for fName in os.listdir(dataPath) :
     dirPath = os.path.join(dataPath,fName)
     if os.path.isdir(dirPath) and fName.startswith("2017") :
-      with open("score.txt","r") as scoreFile :
+      with open(os.path.join(dirPath, "score.txt"),"r") as scoreFile :
         obt_score = float(scoreFile.readline().rstrip())
       if obt_score < float(score) :
         continue
@@ -427,12 +427,20 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
       # score color
       if (not score_col.has_key(obt_score)) :
         score_col[obt_score] = plot_colors[NUM_COL]
+        NUM_COL += 1
         
         
   # plot
   print varN_values
   width = 0.3
   plt_lgd = {}
+  if axis is None :
+    fig,ax = plt.subplots()
+    fig.canvas.set_window_title("Score of simulations according to the " + n_var + " param value")
+    ax.set_ylabel('Number of simulations')
+  else :
+    ax = axis
+    
   for obt_score,valsNb in varN_values.items() :
     # creating the unexisting vals ordering the list of vals
     val_list = []
@@ -441,22 +449,18 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
         val_list.append(0)
       else :
         val_list.append(valsNb[v])
-    p = plt.bar(val_tab,val_list,width, color=score_col[obt_score])
+    p = ax.bar(val_tab,val_list,width, color=score_col[obt_score])
     plt_lgd [p[0]] = obt_score
   # displaying
-  plt.xlabel(n_var + " values")
-  plt.ylabel('Number of simulations')
-  plt.legend(plt_lgd.keys(),plt_lgd.values(), title="Scores")
-  plt.title("Score of simulations according to the " + n_var + " param value")
+  ax.set_xlabel(n_var + " values")
+  ax.legend(plt_lgd.keys(),plt_lgd.values(), title="Scores").draggable()
   plot_margin = 0.25
 
-  x0, x1, y0, y1 = plt.axis()
-  plt.axis((x0 - plot_margin,
+  x0, x1, y0, y1 = ax.axis()
+  ax.axis((x0 - plot_margin,
           x1 + plot_margin,
           y0 - plot_margin,
           y1 + plot_margin))
-  plt.show()
-  
   
   
 ### Tests
@@ -466,4 +470,5 @@ table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.
 plot_inDegrees_boarders_table(table,'0')
 '''
 
-plot_score_ratio("Ie","GPi",dataPath="data")
+plot_score_ratio("Ie","GPi",dataPath="/home/daphnehb/OIST/SangoTests/model2/copyBG")
+plt.show()
