@@ -14,6 +14,7 @@ import matplotlib.lines as mlines
 import matplotlib.ticker as ticker
 from matplotlib import colors as mcolors
 
+import modelParams as mparams
 from LGneurons import NUCLEI, nbSim, FRRNormal, dataPath, FRRAnt, recType
 
 
@@ -374,6 +375,7 @@ Plotting number of simulations which get a score > score param
 for each value of variable for the nucleus
 nucleus is in NUCLEI
 varible is either Ie or G
+ATTENTION : plt.show() must be called after
 '''
 def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=None, axis=None) :
   NUM_COL = 0
@@ -392,8 +394,6 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
   varN_values = {}   # dict {score : {val : nb}}
   model_pattern = re.compile("LG14modelID.*:\ *(\d+).")
   paramVal_pattern = re.compile(n_var + ".*:\ *(\d+).*")
-  ################################## TODO review
-  ### generate plot 
   for fName in os.listdir(dataPath) :
     dirPath = os.path.join(dataPath,fName)
     if os.path.isdir(dirPath) and fName.startswith("2017") :
@@ -431,7 +431,6 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
         
         
   # plot
-  print varN_values
   width = 0.3
   plt_lgd = {}
   if axis is None :
@@ -461,8 +460,40 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
           x1 + plot_margin,
           y0 - plot_margin,
           y1 + plot_margin))
+
+
+'''
+Plot the FR according to the variable G or Ie for a specific nucleus
+val_tab is the list of tuple as (x,y,score)
+
+for each score a specific color
+'''
+def plot_fr_by_var(n_var, val_tab, score_max) :
+  NUM_COLOR = 0
+  score_col = {}
+  plot_colors = mcolors.cnames.keys()     # list of colors in matplotlib
   
+  fig,ax = plt.subplots()
+  # for (x,y,score)
+  for prm, fr, sc in val_tab :
+    if score_col.has_key(sc) :
+      color = score_col[sc]
+      ax.scatter([prm],[fr],c=color)
+      
+    else :
+      color = plot_colors[NUM_COLOR]
+      score_col[sc] = color
+      NUM_COLOR += 1
+      ax.scatter([prm],[fr],c=color, label=sc)
+      
+  ax.set_xlabel(n_var + " values")
+  ax.set_ylabel("Firing Rates")
+  ax.legend(title="Scores (/" + str(score_max) + ")").draggable()
+  ax.set_title("Point cloud of " + str(n_var) + " with score")
+  fig.savefig("plots/FRby"+n_var+".png")
+  plt.close(fig)
   
+
 ### Tests
 '''
 table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.65986013986014, 31696.91076923077), 'GPe->GPi': (1.4744055944055943, 23.59048951048951), 'GPe->MSN': (0.0015184513006654568, 0.14121597096188748), 'GPe->GPe': (0.84, 31.919999999999998), 'CMPf->GPe': (0.3426294820717131, 15.760956175298803), 'CMPf->GPi': (0.6013986013986014, 83.59440559440559), 'CMPf->FSI': (0.16165413533834586, 122.21052631578947), 'PTN->FSI': (-1, 5.0), 'CMPf->STN': (1.1168831168831168, 64.77922077922078), 'STN->MSN': (0.0004949334543254689, 0.05394774652147611), 'GPe->STN': (3.25974025974026, 61.935064935064936), 'STN->GPe': (0.2546215139442231, 74.34948207171315), 'STN->GPi': (0.38769230769230767, 63.96923076923076), 'CMPf->MSN': (0.003251663641863279, 7.244706594071385), 'FSI->FSI': (1.0, 140.0), 'CSN->MSN': (-1, 318.0), 'PTN->MSN': (-1, 5.0), 'FSI->MSN': (0.020114942528735632, 43.689655172413794), 'MSN->MSN': (1.0, 509.0), 'PTN->STN': (-1, 262.0), 'CSN->FSI': (-1, 489.0), 'GPe->FSI': (0.07548872180451129, 36.46105263157895)}
@@ -470,5 +501,5 @@ table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.
 plot_inDegrees_boarders_table(table,'0')
 '''
 
-plot_score_ratio("Ie","GPi",dataPath="/home/daphnehb/OIST/SangoTests/model2/copyBG")
-plt.show()
+#plot_score_ratio("Ie","GPi",dataPath="/home/daphnehb/OIST/SangoTests/model2/copyBG")
+

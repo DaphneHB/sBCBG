@@ -2,7 +2,7 @@
 from LGneurons import *
 import nest.raster_plot
 
-testedNucleus = 'MSN'
+testedNucleus = 'GPi'
 simDuration = 5000. # ms
 nest.SetKernelStatus({"overwrite_files":True})
 
@@ -42,10 +42,10 @@ if testedNucleus == 'STN':
   # connection of populations
   #-------------------------
   print 'Connecting neurons\n================'
-  G = 1.35
+  G = 1.312
   connect('ex','PTN','STN', inDegree=25, gain=G)
-  connect('ex','CMPf','STN', inDegree=min(84,nbSim['CMPf']), gain=G)
-  connect('in','GPe','STN', inDegree= 30, gain=G)
+  connect('ex','CMPf','STN', inDegree=min(9,nbSim['CMPf']), gain=G)
+  connect('in','GPe','STN', inDegree= 25, gain=G)
 
 elif testedNucleus == 'GPe':
 #==========================
@@ -77,11 +77,11 @@ elif testedNucleus == 'GPe':
   #---------------------------
   print 'Connecting neurons\n================'
 
-  G = 1.3
-  connect('ex','CMPf','GPe', inDegree=min(32/2,nbSim['CMPf']), gain=G)
-  connect('ex','STN','GPe', inDegree=min(107/2,nbSim['STN']), gain=G)
-  connect('in','MSN','GPe', inDegree=min(14723/2,nbSim['MSN']), gain=G)
-  connect('in','GPe','GPe', inDegree=min(32,nbSim['GPe']), gain=G)
+  G = 0.732
+  connect('ex','CMPf','GPe', inDegree=min(9,nbSim['CMPf']), gain=G)
+  connect('ex','STN','GPe', inDegree=min(8,nbSim['STN']), gain=G)
+  connect('in','MSN','GPe', inDegree=min(2644,nbSim['MSN']), gain=G)
+  connect('in','GPe','GPe', inDegree=min(25,nbSim['GPe']), gain=G)
 
 elif testedNucleus == 'MSN':
 #==========================
@@ -89,8 +89,18 @@ elif testedNucleus == 'MSN':
 
   # creation of MSN neurons
   #-------------------------
-  nbSim['MSN']=50.
+  nbSim['MSN']=150.
   create('MSN')
+  
+  # STN
+  #-------------------------
+  nbSim['STN'] = 20.
+  create('STN',fake=True)
+
+  # GPe
+  #-------------------------
+  nbSim['GPe'] = 20.
+  create('GPe',fake=True)
 
   # CSN
   #-------------------------
@@ -104,7 +114,7 @@ elif testedNucleus == 'MSN':
 
   # FSI
   #-------------------------
-  nbSim['FSI'] = 1.
+  nbSim['FSI'] = 60.
   create('FSI',fake=True)
 
   # CMPf
@@ -115,11 +125,14 @@ elif testedNucleus == 'MSN':
   # connection of populations
   #---------------------------
   print 'Connecting neurons\n================'
-  G = 3.9
+  G = 4.55
+  connect('in','MSN','MSN',inDegree=70,gain=G) #
+  connect('in','GPe','MSN',inDegree=0.14,gain=G) #
+  connect('ex','STN','MSN',inDegree=0.053,gain=G) #
   connect('ex','CSN','MSN',inDegree=100,gain=G)
   connect('ex','PTN','MSN',inDegree=1,gain=G)
   connect('ex','CMPf','MSN',inDegree=1,gain=G)
-  connect('in','FSI','MSN',inDegree=1,gain=G)
+  connect('in','FSI','MSN',inDegree=30,gain=G)
 
 elif testedNucleus == 'FSI':
 #===========================
@@ -139,12 +152,13 @@ elif testedNucleus == 'FSI':
   create('CMPf',fake=True)
 
   print 'Connecting neurons\n================'
-  G = 1.1
+  G = 0.08  
   connect('ex','CSN','FSI',inDegree=50,gain=G)
   connect('ex','PTN','FSI',inDegree=1,gain=G)
-  connect('ex','STN','FSI',inDegree=7,gain=G)
+  #connect('ex','STN','FSI',inDegree=7,gain=G)
   connect('in','GPe','FSI',inDegree=25,gain=G)
-  connect('ex','CMPf','FSI',inDegree=8,gain=G)
+  connect('ex','CMPf','FSI',inDegree=1,gain=G)
+  connect('in','FSI','FSI',inDegree=15,gain=G)
 
 elif testedNucleus == 'GPi':
 #===========================
@@ -154,21 +168,21 @@ elif testedNucleus == 'GPi':
   create('GPi')
   # add a constant input current to the GPi so that event without excitatory inputs, we have activity
   nest.SetStatus(Pop['GPi'],{"I_e":9.})
-  nbSim['MSN']=1000.
+  nbSim['MSN']=1000.*3
   create('MSN',fake=True)
-  nbSim['STN']=30.
+  nbSim['STN']=30.*3
   create('STN',fake=True)
-  nbSim['GPe']=88.
+  nbSim['GPe']=88.*3
   create('GPe',fake=True)
-  nbSim['CMPf']=30.
+  nbSim['CMPf']=30.*3
   create('CMPf',fake=True)
 
   print 'Connecting neurons\n================'
-  G = 1.3
-  connect('ex','STN','GPi',inDegree=30,gain=G)
-  connect('ex','CMPf','GPi',inDegree=30,gain=G)
-  connect('in','MSN','GPi',inDegree=50,gain=G)
-  connect('in','GPe','GPi',inDegree=10,gain=G)
+  G = 23.55
+  connect('ex','STN','GPi',inDegree=8,gain=G)
+  connect('ex','CMPf','GPi',inDegree=9,gain=G)
+  connect('in','MSN','GPi',inDegree=2644,gain=G)
+  connect('in','GPe','GPi',inDegree=23,gain=G)
 
 
 #-------------------------
@@ -224,4 +238,4 @@ pylab.show()
 '''
 
 nest.raster_plot.from_device(spkDetect,hist=True,title=testedNucleus)
-nest.raster_plot.show()
+#nest.raster_plot.show()

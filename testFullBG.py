@@ -278,7 +278,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
 
 #-----------------------------------------------------------------------
 def main():
-  interactive = False
+  rasters = False
   if len(sys.argv) >= 2:
     print "Command Line Parameters"
     paramKeys = ['LG14modelID',
@@ -336,7 +336,7 @@ def main():
   #timeStr = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])+':'+str(execTime[5])
 
   score = np.zeros((2))
-  score += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=True)
+  score += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=rasters)
 
   '''
   for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:

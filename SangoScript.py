@@ -122,9 +122,11 @@ params = {'nbcpu':    %s,
                   '#SBATCH --input=none\n',
                   '#SBATCH --output="'+IDstring+'.out" \n',
                   '#SBATCH --error="'+IDstring+'.err" \n',
-                  '#SBATCH --mail-user=benoit.girard@isir.upmc.fr \n',
+                  '#SBATCH --mail-user=daphne-heraiz@oist.jp \n',
                   '#SBATCH --mail-type=BEGIN,END,FAIL \n',
                   ]
+
+  moduleUse = ['module use /apps/unit/DoyaU/.modulefiles/ \n']
 
   moduleLoad = ['module load nest/2.10 \n']
 
@@ -133,10 +135,11 @@ params = {'nbcpu':    %s,
   script = open('go.slurm','w')
   script.writelines(header)
   script.writelines(slurmOptions)
+  script.writelines(moduleUse)
   script.writelines(moduleLoad)
   #script.writelines('python testFullBG.py \n')
   #script.writelines('python testChannelBG.py \n')
-  script.writelines('python '+testedParameters['whichTest']+'.py \n')
+  script.writelines('time srun --mpi=pmi2 python '+testedParameters['whichTest']+'.py \n')
   script.close()
 
   # execute the script file
@@ -192,13 +195,13 @@ testedParametersIntervals['iegpe']=[11.]
 testedParametersIntervals['iegpi']=[11.]
 '''
 
-testedParametersIntervals['gmsn']=[1.,2.,3.,4.]
-testedParametersIntervals['gfsi']=[1., 1.1, 1.2]
+testedParametersIntervals['gmsn']=[1.,2.,3.,4.,4.5,5.,6.]
+testedParametersIntervals['gfsi']=[0.6,0.8,1., 1.2,1.4,1.6,1.8,2.]
 testedParametersIntervals['gstn']=[1., 1.1, 1.2,1.3,1.4]
-testedParametersIntervals['ggpe']=[1., 1.1, 1.2]
-testedParametersIntervals['ggpi']=[1., 1.1, 1.2]
-testedParametersIntervals['iegpe']=[11.,12.,13.]
-testedParametersIntervals['iegpi']=[10.,11.,12.]
+testedParametersIntervals['ggpe']=[0.8,1., 1.1, 1.2,1.4,1.6,1.8]
+testedParametersIntervals['ggpi']=[1., 2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,13.]
+testedParametersIntervals['iegpe']=[9.,10.,11.,12.,13.,14.,15.]
+testedParametersIntervals['iegpi']=[9.,10.,11.,12.,13.,14.,15.]
 
 
 ftp = open(timeString+'_testedParameter.txt','w')

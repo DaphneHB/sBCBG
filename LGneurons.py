@@ -156,7 +156,10 @@ def connect(type,nameSrc,nameTgt,inDegree,LCGDelays=True,gain=1.):
   for nTgt in range(int(nbSim[nameTgt])):
     if not loadConnectMap:
     # if no connectivity map exists between the two populations, let's create one
-      inputTable = rnd.choice(int(nbSim[nameSrc]),size=int(inDegree),replace=False)
+      n = int(inDegree)/int(len(Pop[nameSrc]))
+      r = float(inDegree)/float(len(Pop[nameSrc])) - n
+      inDeg = int(inDegree) + 1 if rnd.rand() < r else int(inDegree)
+      inputTable = rnd.choice(int(nbSim[nameSrc]),size=int(inDeg),replace=False)
       inputPop = []
       for i in inputTable:
         inputPop.append(Pop[nameSrc][i])
