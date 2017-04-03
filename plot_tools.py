@@ -8,6 +8,7 @@ import os
 import re
 import random
 import numpy as np
+from operator import add
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.lines as mlines
@@ -169,6 +170,20 @@ def plot_margin_boxes(ax, rect_size, antag) :
       x = 2*i*rect_size+rect_size      
       # setting a label on the rectangle
       plt.text(x + 0.05, -12, N, ha="center", family='sans-serif', size=10)
+      y = FRRNormal[N][0]
+      w = rect_size
+      h = FRRNormal[N][1]-FRRNormal[N][0]
+      
+      # drawing a rectangle as the acceptable intervalle
+      ax.add_patch(
+          patches.Rectangle(
+              # letting some margin
+              (x, y),           # (x,y) position of the bottom left
+              w,                # width
+              h,                # height
+              fill=False,       # remove background
+          )
+      )
       
   else : # a specific antag
     # showing the GPi/e box only with a certain y margin
@@ -186,15 +201,16 @@ def plot_margin_boxes(ax, rect_size, antag) :
         ax.add_patch(
             patches.Rectangle(
                 # letting some margin
-                (x, mxFR),           # (x,y) position of the bottom left
+                (x, mnFR),           # (x,y) position of the bottom left
                 rect_size,                # width
                 h,                # height
                 fill=False,       # remove background
             )
           )
-        ymax = mxFR + h
+        ymax = mxFR
       # setting a label on the rectangle
-      plt.text(x + 0.05, -12, N, ha="center", family='sans-serif', size=14)
+      plt.text(x + 0.05, -18, N, ha="center", family='sans-serif', size=10)
+      
     ymax += 10
   # removing labels from x
   ax.set_xticklabels([])
@@ -299,7 +315,7 @@ Works on the assumption that every simu firing rates
 are reported in a allFiringRates.csv global file in the global log directory
 the norm param decide whether or not we should have a normalization of the y axis
 '''
-def plot_margins_and_simus(filename=None,norm=False, antag=None, model=None) :
+def plot_margins_and_simus(filename=None,norm=False, antag=None, model=None, separated=None) :
   global NUCLEI
   
   # antag & norm isnt possible
@@ -370,6 +386,17 @@ def plot_margins_and_simus(filename=None,norm=False, antag=None, model=None) :
   # showing plot
   plt.show()
 
+
+'''
+Display on a plot the reason why a slope or bars cant ba displayed
+'''
+def plot_print_wrong(ax,reason) :
+  if not ax is None :
+    x0, x1, y0, y1 = ax.axis()
+    ax.text(x1 - x0 + 2., y1 - y0, reason, ha="center", family='sans-serif', size=12)
+  return 1
+  
+  
 '''
 Plotting number of simulations which get a score > score param
 for each value of variable for the nucleus
@@ -377,23 +404,25 @@ nucleus is in NUCLEI
 varible is either Ie or G
 ATTENTION : plt.show() must be called after
 '''
-def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=None, axis=None) :
+def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=None, axis=None,save=None) :
   NUM_COL = 0
   global NUCLEI
   if not nucleus in NUCLEI :
-    print "------------ ERROR : Wrong nucleus"
-    return 1
+    reason = "------------ ERROR : Wrong nucleus"
+    print reason
+    return plot_print_wrong(axis,reason)
   if not ("Ie"==variable or "G"==variable) :
-    print "------------ ERROR : Wrong variable name [" + variable + "]"
-    return 1
-   
+    reason = "------------ ERROR : Wrong variable name [" + variable + "]"
+    print reason
+    return plot_print_wrong(axis,reason)
+  
   val_tab = []
   score_col = {}
   plot_colors = mcolors.cnames.keys()     # list of colors in matplotlib
   n_var = variable + nucleus
   varN_values = {}   # dict {score : {val : nb}}
   model_pattern = re.compile("LG14modelID.*:\ *(\d+).")
-  paramVal_pattern = re.compile(n_var + ".*:\ *(\d+).*")
+  paramVal_pattern = re.compile(n_var + ".*:\ *(\d+[\.\d*]*).*")
   for fName in os.listdir(dataPath) :
     dirPath = os.path.join(dataPath,fName)
     if os.path.isdir(dirPath) and fName.startswith("2017") :
@@ -412,11 +441,13 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
           continue
       # get value
       try :
-        val = int(paramVal_pattern.findall(filter(lambda x : paramVal_pattern.search(x), Paramsdata)[0])[0])
-        val_tab.append(val)
+        val = float(paramVal_pattern.findall(filter(lambda x : paramVal_pattern.search(x), Paramsdata)[0])[0])
+        if not val in val_tab :
+          val_tab.append(val)
       except IndexError: # if there were no result : the variable name is wrong
-        print "------------- ERROR : Wrong variable name [" + n_var + "]"
-        return 1
+        reason = "------------- ERROR : Wrong variable name [" + n_var + "]"
+        print reason
+        return plot_print_wrong(axis,reason)
       # extending the nb
       if (not varN_values.has_key(obt_score)) :
         varN_values[obt_score] = {val : 1} #dict(zip([float(x) for x in range(score,15)],[0.] * (15-score)))   # initializing every possible score for this value
@@ -428,10 +459,15 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
       if (not score_col.has_key(obt_score)) :
         score_col[obt_score] = plot_colors[NUM_COL]
         NUM_COL += 1
-        
-        
+  # for every score
+  for scKeys,valDict in varN_values.items() :
+      # for values of the param that are not in score, put the number to 0
+      for i,val in enumerate(val_tab) :
+        if not valDict.has_key(val) :
+          varN_values[scKeys][val] = 0
+  
   # plot
-  width = 0.3
+  width = (max(val_tab)-min(val_tab))/10
   plt_lgd = {}
   if axis is None :
     fig,ax = plt.subplots()
@@ -439,28 +475,34 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
     ax.set_ylabel('Number of simulations')
   else :
     ax = axis
-    
-  for obt_score,valsNb in varN_values.items() :
+  
+  # the bottom value of each hist
+  # changing at each loop
+  btm = [0] * len(val_tab)
+  for i,dval in enumerate(varN_values.items()) :
     # creating the unexisting vals ordering the list of vals
-    val_list = []
-    for v in val_tab :
-      if not v in valsNb :
-        val_list.append(0)
-      else :
-        val_list.append(valsNb[v])
-    p = ax.bar(val_tab,val_list,width, color=score_col[obt_score])
+    obt_score,valsNb = dval
+    val_keys = sorted(valsNb)   # getting the key ordered
+    val_nb = [valsNb[k] for k in val_keys]    # getting the value for the ordered keys
+    p = ax.bar(val_keys,val_nb, width,color=score_col[obt_score], bottom=btm)
     plt_lgd [p[0]] = obt_score
+    btm = map(add,btm,val_nb)
+    
+  mxVal = max(btm)    
   # displaying
+  ax.set_yticks(np.linspace(0.,mxVal+1, 3 ) )
   ax.set_xlabel(n_var + " values")
-  ax.legend(plt_lgd.keys(),plt_lgd.values(), title="Scores").draggable()
-  plot_margin = 0.25
+  ax.legend(plt_lgd.keys(),plt_lgd.values(), title="Scores",loc=2,bbox_to_anchor=(0.8,1.1),fontsize='x-small').draggable()
+  plot_margin = width
 
   x0, x1, y0, y1 = ax.axis()
   ax.axis((x0 - plot_margin,
           x1 + plot_margin,
-          y0 - plot_margin,
-          y1 + plot_margin))
-
+          y0, 
+          y1))
+  ax.grid()
+  if not save is None :
+    fig.savefig(save)
 
 '''
 Plot the FR according to the variable G or Ie for a specific nucleus
@@ -468,7 +510,7 @@ val_tab is the list of tuple as (x,y,score)
 
 for each score a specific color
 '''
-def plot_fr_by_var(n_var, val_tab, score_max) :
+def plot_fr_by_var(n_var, val_tab, score_max, interv) :
   NUM_COLOR = 0
   score_col = {}
   plot_colors = mcolors.cnames.keys()     # list of colors in matplotlib
@@ -486,10 +528,13 @@ def plot_fr_by_var(n_var, val_tab, score_max) :
       NUM_COLOR += 1
       ax.scatter([prm],[fr],c=color, label=sc)
       
+  ax.set_xticks(np.arange(*interv),minor=True)
   ax.set_xlabel(n_var + " values")
   ax.set_ylabel("Firing Rates")
-  ax.legend(title="Scores (/" + str(score_max) + ")").draggable()
+  ax.legend(title="Scores (/" + str(score_max) + ")",loc='upper left',bbox_to_anchor=(0.,1.),ncol=3,fontsize='x-small').draggable()
   ax.set_title("Point cloud of " + str(n_var) + " with score")
+  ax.grid()  
+  
   fig.savefig("plots/FRby"+n_var+".png")
   plt.close(fig)
   
