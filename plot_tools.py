@@ -669,6 +669,14 @@ def plot_param_by_param(param1, param2, param3=None, dataPath=os.getcwd(), score
     fig.savefig("log/" + figname + ".png")
   else :
     plt.show()
+    
+'''
+Plotting for the 15 models for the 14 ranges, which one are/is wrong
+for a given parametrization
+'''
+def plot_models_ranges(paramFilePath=os.path.join(os.getcwd(),"modelParams.py"), models=np.arange(0,15,1)) :
+  for mod in models :
+    print "Generating for model #" + str(mod)
 
 ### Tests
 '''
@@ -676,5 +684,5 @@ table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.
 
 plot_inDegrees_boarders_table(table,'0')
 '''
-
+plot_models_ranges()
 #plot_score_ratio("Ie","GPi",dataPath="/home/daphnehb/OIST/SangoTests/model2/copyBG")
