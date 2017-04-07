@@ -7,13 +7,17 @@ Created on Mon Mar 13 17:32:40 2017
 import os
 import re
 import random
+import commands
 import numpy as np
 from operator import add
+
+from pylab import cm
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.lines as mlines
 import matplotlib.ticker as ticker
 from matplotlib import colors as mcolors
+from mpl_toolkits.mplot3d import Axes3D
 
 import modelParams as mparams
 from LGneurons import NUCLEI, nbSim, FRRNormal, dataPath, FRRAnt, recType
@@ -93,16 +97,26 @@ def plot_inDegrees_boarders_table(table_dict, model, filename=None) :
         clust_data[i*nbNuclei+j][3] = "---"
         clust_data[i*nbNuclei+j][4] = "---"
         
-  the_table = ax.table(cellText=clust_data,colLabels=collabel,loc='center')
+  the_table = ax.table(cellText=clust_data,colLabels=collabel,loc='center',)
 
   fig.canvas.set_window_title("Model num " + str(model))
+  plt.title("Model " + str(model))
+  the_table.set_fontsize(20)
   #for some reason zorder is not a keyword in ax.table
   the_table.set_zorder(10)
-
-  plt.show()
   
   if (not filename is None) :
-    plt.savefig(filename + ".txt")
+    plt.savefig(filename)
+  else :
+    plt.show()
+
+
+'''
+Plot the inDegree network graph for the given model
+'''
+def plot_inDegree_network(table_dict, model, filename=None) :
+  pass
+
 
 
 '''
@@ -157,21 +171,16 @@ def plot_margin_boxes(ax, rect_size, antag) :
       # To change to boxplots
       #ax.boxplot(margin_data)
   elif (antag == "all") :
-    # getting the max possible value of y/x according to all antagonist injections
-    for antN in FRRAnt.keys() :
-      # for every possible injection
-      for mn,mx in FRRAnt[antN].values() :
-        # comparing max values
-        if (ymax < mx) :
-          ymax = mx
-    ymax += 10
+    NUM_COL = 0
+    ant_col = {}
+    plot_colors = mcolors.cnames.keys()     # list of colors in matplotlib
+    antNuclei = FRRAnt.keys()
     ## plotting every nuclei name
     for i,N in enumerate(NUCLEI) :
-      x = 2*i*rect_size+rect_size      
+      x = 2*i*rect_size+rect_size
       # setting a label on the rectangle
       plt.text(x + 0.05, -12, N, ha="center", family='sans-serif', size=10)
       y = FRRNormal[N][0]
-      w = rect_size
       h = FRRNormal[N][1]-FRRNormal[N][0]
       
       # drawing a rectangle as the acceptable intervalle
@@ -179,11 +188,20 @@ def plot_margin_boxes(ax, rect_size, antag) :
           patches.Rectangle(
               # letting some margin
               (x, y),           # (x,y) position of the bottom left
-              w,                # width
+              rect_size,                # width
               h,                # height
               fill=False,       # remove background
           )
       )
+      if N in antNuclei :
+        # for every possible injection
+        for antInj,boards in FRRAnt[N].items() :
+          # getting the max possible value of y/x according to all antagonist injections
+          mn,mx = boards
+          # comparing max values
+          if (ymax < mx) :
+            ymax = mx
+        ymax += 10
       
   else : # a specific antag
     # showing the GPi/e box only with a certain y margin
@@ -291,7 +309,7 @@ def plot_simu_points(allFiringRates, ax, norm, antag, model, rect_size, xyMax) :
     x_tab = np.arange(rect_size,xmax,rect_size*2) + rnd
     #print "X = ",x_tab," Y = ", listFR,"color = ",color
       
-    ax.scatter(x_tab,listFR, c=color,marker=mark)
+    ax.scatter(x_tab,listFR, c=color,marker=mark,edgecolor='')
     # getting the maximum y possible :
     mx = max(listFR)
     if (ymax<mx) :
@@ -417,8 +435,6 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
     return plot_print_wrong(axis,reason)
   
   val_tab = []
-  score_col = {}
-  plot_colors = mcolors.cnames.keys()     # list of colors in matplotlib
   n_var = variable + nucleus
   varN_values = {}   # dict {score : {val : nb}}
   model_pattern = re.compile("LG14modelID.*:\ *(\d+).")
@@ -426,8 +442,11 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
   for fName in os.listdir(dataPath) :
     dirPath = os.path.join(dataPath,fName)
     if os.path.isdir(dirPath) and fName.startswith("2017") :
-      with open(os.path.join(dirPath, "score.txt"),"r") as scoreFile :
-        obt_score = float(scoreFile.readline().rstrip())
+      try:
+        with open(os.path.join(dirPath, "score.txt"),"r") as scoreFile :
+          obt_score = float(scoreFile.readline().rstrip())
+      except Exception :
+        continue
       if obt_score < float(score) :
         continue
       # If the score is ok
@@ -455,10 +474,6 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
         varN_values[obt_score][val] += 1
       else :
         varN_values[obt_score][val] = 1
-      # score color
-      if (not score_col.has_key(obt_score)) :
-        score_col[obt_score] = plot_colors[NUM_COL]
-        NUM_COL += 1
   # for every score
   for scKeys,valDict in varN_values.items() :
       # for values of the param that are not in score, put the number to 0
@@ -467,7 +482,7 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
           varN_values[scKeys][val] = 0
   
   # plot
-  width = (max(val_tab)-min(val_tab))/10
+  width = (max(val_tab)-min(val_tab))/(len(val_tab)*len(val_tab))
   plt_lgd = {}
   if axis is None :
     fig,ax = plt.subplots()
@@ -479,20 +494,23 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
   # the bottom value of each hist
   # changing at each loop
   btm = [0] * len(val_tab)
-  for i,dval in enumerate(varN_values.items()) :
+  nbScores = len(varN_values)
+  plot_colors = sorted(mcolors.cnames.values()[:nbScores + 1])     # list of colors in matplotlib
+  for i,obt_score in enumerate(sorted(varN_values)) :
     # creating the unexisting vals ordering the list of vals
-    obt_score,valsNb = dval
+    valsNb = varN_values[obt_score]
     val_keys = sorted(valsNb)   # getting the key ordered
     val_nb = [valsNb[k] for k in val_keys]    # getting the value for the ordered keys
-    p = ax.bar(val_keys,val_nb, width,color=score_col[obt_score], bottom=btm)
-    plt_lgd [p[0]] = obt_score
+    p = ax.bar(val_keys,val_nb, width,color=plot_colors[i], bottom=btm,edgecolor='')
+    plt_lgd [obt_score] = p[0]
     btm = map(add,btm,val_nb)
     
   mxVal = max(btm)    
   # displaying
   ax.set_yticks(np.linspace(0.,mxVal+1, 3 ) )
   ax.set_xlabel(n_var + " values")
-  ax.legend(plt_lgd.keys(),plt_lgd.values(), title="Scores",loc=2,bbox_to_anchor=(0.8,1.1),fontsize='x-small').draggable()
+  score_lgd = sorted(plt_lgd)
+  ax.legend([plt_lgd[s] for s in score_lgd], score_lgd, title="Scores",loc=2,bbox_to_anchor=(0.9,1.1),fontsize='x-small').draggable()
   plot_margin = width
 
   x0, x1, y0, y1 = ax.axis()
@@ -520,13 +538,13 @@ def plot_fr_by_var(n_var, val_tab, score_max, interv) :
   for prm, fr, sc in val_tab :
     if score_col.has_key(sc) :
       color = score_col[sc]
-      ax.scatter([prm],[fr],c=color)
+      ax.scatter([prm],[fr],c=color,edgecolor='')
       
     else :
       color = plot_colors[NUM_COLOR]
       score_col[sc] = color
       NUM_COLOR += 1
-      ax.scatter([prm],[fr],c=color, label=sc)
+      ax.scatter([prm],[fr],c=color,label=sc,edgecolor='')
       
   ax.set_xticks(np.arange(*interv),minor=True)
   ax.set_xlabel(n_var + " values")
@@ -538,6 +556,119 @@ def plot_fr_by_var(n_var, val_tab, score_max, interv) :
   fig.savefig("plots/FRby"+n_var+".png")
   plt.close(fig)
   
+  
+def plot_param_by_param(param1, param2, param3=None, dataPath=os.getcwd(), score=0, model=None, save=False) :
+  NUM_COL = 0
+  global NUCLEI
+  # paramX_vals dict as : {param: (index in score_vals,)}
+  param1_vals = []
+  param2_vals = []
+  param3_vals = []
+  score_vals = []
+  eachPoint = {}  # dict of list as point coordinate : score list
+  
+  fig = plt.figure(figsize=(8,6))
+  if not param3 is None :
+    axis = Axes3D(fig)
+  else :
+    axis = fig.add_subplot(111)
+    
+  model_pattern = re.compile("LG14modelID.*:\ *(\d+).")
+  param1Val_pattern = re.compile(str(param1) + ".*:\ *(\d+[\.\d*]*).*")
+  param2Val_pattern = re.compile(str(param2) + ".*:\ *(\d+[\.\d*]*).*")
+  param3Val_pattern = re.compile(str(param3) + ".*:\ *(\d+[\.\d*]*).*")
+  for fName in os.listdir(dataPath) :
+    dirPath = os.path.join(dataPath,fName)
+    if os.path.isdir(dirPath) and fName.startswith("2017") :
+      with open(os.path.join(dirPath, "score.txt"),"r") as scoreFile :
+        obt_score = float(scoreFile.readline().rstrip())
+      if obt_score < float(score) :
+        continue
+      # If the score is ok
+      # lets check the model nb by getting the modelParams
+      with open(dirPath+"/modelParams.py", 'r') as paramsFile :
+        Paramsdata = paramsFile.readlines()
+        # only getting the results of the expected model
+      if (not model is None) :
+        mod = int(model_pattern.findall(filter(lambda x : model_pattern.search(x), Paramsdata)[0])[0])
+        if (mod != model) :
+          continue
+      # get values
+      point = []
+      try :
+        val1 = float(param1Val_pattern.findall(filter(lambda x : param1Val_pattern.search(x), Paramsdata)[0])[0])
+        param1_vals.append(val1)
+        point.append(val1)
+      except IndexError: # if there were no result : the variable name is wrong
+        reason = "------------- ERROR : Wrong variable name [" + str(param1) + "]"
+        print reason
+        return plot_print_wrong(axis,reason)
+      try :
+        val2 = float(param2Val_pattern.findall(filter(lambda x : param2Val_pattern.search(x), Paramsdata)[0])[0])
+        param2_vals.append(val2)
+        point.append(val2)
+      except IndexError: # if there were no result : the variable name is wrong
+        reason = "------------- ERROR : Wrong variable name [" + str(param2) + "]"
+        print reason
+        return plot_print_wrong(axis,reason)
+      if not param3 is None :
+        try :
+          val3 = float(param3Val_pattern.findall(filter(lambda x : param3Val_pattern.search(x), Paramsdata)[0])[0])
+          param3_vals.append(val3)
+          point.append(val3)
+        except IndexError: # if there were no result : the variable name is wrong
+          reason = "------------- ERROR : Wrong variable name [" + str(param3) + "]"
+          print reason
+          return plot_print_wrong(axis,reason)
+      # saving every score for each point
+      point = tuple(point)
+      if eachPoint.has_key(point) :
+        eachPoint[point].append(obt_score)
+      else :
+        eachPoint[point] = [obt_score]
+      score_vals.append(obt_score)
+  # end for
+  score_vals = np.array(score_vals)
+  colmap = cm.ScalarMappable(cmap=cm.hsv)
+  colmap.set_array(score_vals)
+  
+  axis.set_xlabel(str(param1) + ' values')
+  axis.set_ylabel(str(param2) + ' values')
+  if param3 is None :
+    # plotting 2D
+    axis.scatter(param1_vals,param2_vals,c=cm.hsv(score_vals/max(score_vals)),s=500,marker='s',edgecolor='')
+    title = "Score with x=" + str(param1) + " and y=" + str(param2)
+    figname = param1 + "+" + param2 + "_score2D"
+    axis.set_title(title)
+    fig.canvas.set_window_title(figname)
+    # displaying the score mean and median for each point
+    for pt,scoreList in eachPoint.items() :
+      meanScore = int(sum(scoreList) / (len(scoreList) * 14.) * 100 )
+      medianScore = np.median(scoreList)
+      txt = str(meanScore) + "%\n" +  str(medianScore)
+      x,y = pt
+      axis.text(x, y, txt, ha="center", family='sans-serif', size=8)
+  else :
+    axis.set_zlabel(str(param3) + ' values')
+    # plotting 3D
+    axis.scatter(param1_vals,param2_vals,param3_vals,c=cm.hsv(score_vals/max(score_vals)),s=500,marker='s',edgecolor='')
+    title = "Score with x=" + str(param1) + ", y=" + str(param2) + " and z=" + str(param3)
+    figname = param1 + "+" + param2 + "+" + param3 + "_score3D"
+    axis.set_title(title)
+    fig.canvas.set_window_title(figname)
+    # displaying the score mean and median for each point
+    for pt,scoreList in eachPoint.items() :
+      meanScore = int(sum(scoreList) / (len(scoreList) * 14.) * 100 )
+      medianScore = np.median(scoreList)
+      txt = str(meanScore) + "%\n" +  str(medianScore)
+      x,y,z = pt
+      axis.text(x, y, z, txt, ha="center", family='sans-serif', size=8)
+  cb = fig.colorbar(colmap)
+  plt.subplots_adjust()
+  if save:
+    fig.savefig("log/" + figname + ".png")
+  else :
+    plt.show()
 
 ### Tests
 '''
@@ -547,4 +678,3 @@ plot_inDegrees_boarders_table(table,'0')
 '''
 
 #plot_score_ratio("Ie","GPi",dataPath="/home/daphnehb/OIST/SangoTests/model2/copyBG")
-

@@ -14,16 +14,23 @@ import io_gest as io
 Generate the inDegree table from each nucleus to each nucleus for the given model number
 show the plot
 '''
-def generate_table(model) :
+def generate_table(model,save=False) :
   params['LG14modelID'] = model
+  print "Generating inDegree Table for model " + str(model)
+  os.system("rm -r log/*")
   score = np.zeros((2))
   score += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=False)
   
   print "Plot table generation for the model ",str(model)
   
-  global inDegree_boarders  
-  pltT.plot_inDegrees_boarders_table(inDegree_boarders,model)
+  global inDegree_boarders
+  if save :
+    filename = "tables/inDegreeTable#" + str(model) + ".png"
+  else :
+    filenamae = None
+  pltT.plot_inDegrees_boarders_table(inDegree_boarders,model=model,filename=filename)
   
+
 '''
 Generate the plot with the margin to analyze the in-range data and their scores
 Useful to see if the data are in the high-range or low-range
@@ -40,6 +47,8 @@ separated : plotting separatedly or in the same figure
 def generate_margin_plot(glob=True,path=None, model=None, antag=None, norm=False, score=0, limit=-1,separated=False):
   if path is None :
     path = os.getcwd()
+  if antag=='none' :
+    antag = None
   filename = 'allFiringRates'
   if glob :
     io.concat_data(outFile=filename,dataPath=path,model=model,score=score,limit=limit)
@@ -55,7 +64,7 @@ nucleus must be a list of BG nucleus
 each variables is then associated with each nucleus
 a tuple (variable,nucleus) define a figure
 '''    
-def generate_param_analyze(variables, nuclei, path=None, score=0, model=None, separated=True, save=False) :
+def generate_param_score_analyze(variables, nuclei, path=None, score=0, model=None, separated=True, save=False) :
   if path is None :
     path = os.getcwd()
   # whether we want to plot for multiple params
@@ -127,6 +136,7 @@ def generate_fr_by_param(N, V, interv, with_antag=False) :
     os.system("rm -r log/*")
     score = np.zeros((2))
     # launching simulations
+    
     score += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=False)
     if with_antag :      
       for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
@@ -134,6 +144,7 @@ def generate_fr_by_param(N, V, interv, with_antag=False) :
     
       for a in ['All','AMPA','NMDA+AMPA','NMDA','GABAA']:
         score += checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
+        
     sc, score_max = score
     # getting the FR in firingRates.csv
     with open("log/firingRates.csv") as frFile :
@@ -144,22 +155,33 @@ def generate_fr_by_param(N, V, interv, with_antag=False) :
   
   pltT.plot_fr_by_var(n_var, vals, score_max,interv)
   
+
+'''
+Analyze mutually param1, param2, param3
+'''
+def generate_param_analyze(param1,param2,param3=None,save=False,path=os.getcwd(), score=0,model=None) :
+  pltT.plot_param_by_param(param1,param2,param3=param3,save=save,dataPath=path, score=score,model=model)
+  
+  
+'''
+for md in range(0,15) :
+  generate_table(md,save=True)
+'''
+
 #generate_table(2)
-#generate_margin_plot(path="/home/daphnehb/OIST/SangoTests/model2/copyBG",limit=50,score=3)
-#generate_margin_plot(glob=False,antag='GPi_NMDA+AMPA',path="/home/daphnehb/OIST/sBCBG/",limit=50,score=3)
-generate_param_analyze(['G'], ['STN','MSN','GPi','GPe','FSI'],model=2, save=True,path="/home/daphnehb/OIST/SangoTests/model2/copyBG")
-
-#generate_fr_by_param('GPe','G', (0.7,3.,0.1),with_antag=True)
+generate_margin_plot(glob=False,antag='GPe_AMPA',path="/home/daphnehb/OIST/sBCBG/",limit=100,score=3)
+#generate_margin_plot(glob=True,antag='none',path="/home/daphnehb/OIST/SangoTests/model2/2017_4_5/",limit=100,score=0)
+#generate_param_score_analyze(['G','Ie'], ['MSN','FSI','GPe','GPi','STN'],score=0,model=2, save=True,separated=True,path="/home/daphnehb/OIST/SangoTests/model2/2017_4_5")
+#generate_param_analyze("GMSN","IeGPi",param3=None, score=0,save=False,path="/home/daphnehb/OIST/SangoTests/model2/2017_3_29",model=2)
+#generate_fr_by_param('GPe','Ie', (5.,13.,1),with_antag=True)
+#generate_fr_by_param('GPi','Ie', (5.,15.,1),with_antag=True)
 '''
-generate_fr_by_param('FSI','G', (0.5,1.8,0.005))
-generate_fr_by_param('MSN','G', (0.5,5.35,0.005))
-generate_fr_by_param('GPe','G', (0.7,3.,0.1))
-generate_fr_by_param('GPi','G', (0.5,5,0.01))
-generate_fr_by_param('STN','G', (1.2,1.45,0.005))
+generate_fr_by_param('MSN','G', (5.,16.,0.5),with_antag=True)
+generate_fr_by_param('GPi','G', (5.,15.,0.5),with_antag=True)
+generate_fr_by_param('STN','G', (1.2,1.5,0.01),with_antag=True)
+generate_fr_by_param('GPe','G', (0.01,0.5,0.01),with_antag=True)
+#generate_fr_by_param('FSI','G', (0.5,1.8,0.01),with_antag=True)
 '''
-#generate_fr_by_param('GPe','Ie', (0.5,8,0.05))
-#generate_fr_by_param('GPi','Ie', (25,100,5))
-
 '''
 for N in NUCLEI :
   # for each nucleus generating G plot
