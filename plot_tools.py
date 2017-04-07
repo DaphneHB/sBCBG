@@ -674,9 +674,11 @@ def plot_param_by_param(param1, param2, param3=None, dataPath=os.getcwd(), score
 Plotting for the 15 models for the 14 ranges, which one are/is wrong
 for a given parametrization
 '''
-def plot_models_ranges(paramFilePath=os.path.join(os.getcwd(),"modelParams.py"), models=np.arange(0,15,1)) :
+def plot_models_ranges(allFRdata, paramFilePath=os.path.join(os.getcwd(),"modelParams.py"), models=np.arange(0,15,1)) :
   for mod in models :
     print "Generating for model #" + str(mod)
+    
+    
 
 ### Tests
 '''

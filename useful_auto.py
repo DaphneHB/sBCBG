@@ -163,6 +163,27 @@ def generate_param_analyze(param1,param2,param3=None,save=False,path=os.getcwd()
   pltT.plot_param_by_param(param1,param2,param3=param3,save=save,dataPath=path, score=score,model=model)
   
   
+def generate_models_ranges_tab (paramFilePath=os.path.join(os.getcwd(),"modelParams.py"), models=np.arange(0,15,1), score=0) :
+  globFile = "allFiringRates.csv"
+  allFRdata = {}
+  for mod in models :
+    params['LG14modelID'] = model
+    print "Generating for model #" + str(mod)
+    os.system("rm -r log/*")
+    scoreTab = np.zeros((2))
+    scoreTab += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=False)
+    if scoreTab[0] < score :
+      continue
+    # read firingRates.csv file
+    with open(os.path.join(os.getcwd(),"log/firingRates.csv")) as frFile :
+      FRdata = frFile.readlines()  # list of lines
+    allFRdata[mod] = FRdata
+  
+  print "Plot table generation for the model ",str(model)
+  # plotting with plot_tools file
+  pltT.plot_models_ranges(allFRdata)
+    
+  
 '''
 for md in range(0,15) :
   generate_table(md,save=True)
