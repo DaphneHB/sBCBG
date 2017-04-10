@@ -7,8 +7,10 @@ Created on Fri Mar 24 11:29:18 2017
 
 from testFullBG import *
 import os
+import re
 import plot_tools as pltT
 import io_gest as io
+from datetime import datetime
 
 '''
 Generate the inDegree table from each nucleus to each nucleus for the given model number
@@ -84,7 +86,7 @@ def generate_param_score_analyze(variables, nuclei, path=None, score=0, model=No
         if i==j==0 :
           ax.set_ylabel('Number of simulations')
         pltT.plot_score_ratio(variables[j], nuclei[i], dataPath=path, score=score, model=model, axis=ax,save=None)
-    if not save is None :
+    if save :
       nucleiStr = "_" + "+".join(nuclei) + "_" + "+".join(variables)
       fig.savefig("plots/scoreRatio" + nucleiStr + "#" + str(model) + ".png")
   else :
@@ -163,26 +165,52 @@ def generate_param_analyze(param1,param2,param3=None,save=False,path=os.getcwd()
   pltT.plot_param_by_param(param1,param2,param3=param3,save=save,dataPath=path, score=score,model=model)
   
   
-def generate_models_ranges_tab (paramFilePath=os.path.join(os.getcwd(),"modelParams.py"), models=np.arange(0,15,1), score=0) :
+def generate_models_ranges_tab (paramFilePath=os.path.join(os.getcwd(),"modelParams.py"), models=np.arange(0,15,1), score=0, with_antag=False,save=False) :
   globFile = "allFiringRates.csv"
   allFRdata = {}
   for mod in models :
-    params['LG14modelID'] = model
+    params['LG14modelID'] = mod
     print "Generating for model #" + str(mod)
     os.system("rm -r log/*")
     scoreTab = np.zeros((2))
     scoreTab += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=False)
+    if with_antag :      
+      for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
+        scoreTab += checkAvgFR(params=params,antagInjectionSite='GPe',antag=a)
+    
+      for a in ['All','AMPA','NMDA+AMPA','NMDA','GABAA']:
+        scoreTab += checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
     if scoreTab[0] < score :
       continue
-    # read firingRates.csv file
-    with open(os.path.join(os.getcwd(),"log/firingRates.csv")) as frFile :
+    #path = os.path.dirname(paramFilePath)
+    with open("validationArray.csv", 'r') as frFile :
       FRdata = frFile.readlines()  # list of lines
     allFRdata[mod] = FRdata
-  
-  print "Plot table generation for the model ",str(model)
+  global NUCLEI
+  legend = []
+  with open(paramFilePath,'r') as paramFile :
+    paramsData = paramFile.readlines()
+  for N in NUCLEI :
+    # getting the gain for this Nucleus
+    param = "G" + N
+    paramVal_pattern = re.compile("(." + str(param) + ".*:\ *\d+[\.\d*]*),")
+    val = filter(lambda x : paramVal_pattern.search(x), paramsData)[0].replace(" ","")
+    val = val.replace(",\n","")
+    legend.append(val)
+    # also getting the input current
+    if N=="GPe" or N=="GPi" :
+      param = "Ie" + N
+      paramVal_pattern = re.compile("(." + str(param) + ".*:\ *\d+[\.\d*]*),.*")
+      val = filter(lambda x : paramVal_pattern.search(x), paramsData)[0].replace(" ","")
+      val = val.replace(",\n","")
+      legend.append(val)
+  print "Plot array simu generation for the model ",str(mod)
   # plotting with plot_tools file
-  pltT.plot_models_ranges(allFRdata)
-    
+  filename = None
+  if save :
+      filename = "plots/" + str(datetime.now()) + "modelsValidation.png"
+  pltT.plot_models_ranges(allFRdata, legend, filename=filename)
+  
   
 '''
 for md in range(0,15) :
@@ -190,7 +218,7 @@ for md in range(0,15) :
 '''
 
 #generate_table(2)
-generate_margin_plot(glob=False,antag='GPe_AMPA',path="/home/daphnehb/OIST/sBCBG/",limit=100,score=3)
+#generate_margin_plot(glob=False,antag='GPe_AMPA',path="/home/daphnehb/OIST/sBCBG/",limit=100,score=3)
 #generate_margin_plot(glob=True,antag='none',path="/home/daphnehb/OIST/SangoTests/model2/2017_4_5/",limit=100,score=0)
 #generate_param_score_analyze(['G','Ie'], ['MSN','FSI','GPe','GPi','STN'],score=0,model=2, save=True,separated=True,path="/home/daphnehb/OIST/SangoTests/model2/2017_4_5")
 #generate_param_analyze("GMSN","IeGPi",param3=None, score=0,save=False,path="/home/daphnehb/OIST/SangoTests/model2/2017_3_29",model=2)
@@ -210,3 +238,5 @@ for N in NUCLEI :
   if "GPi" in N :
     generate_fr_by_param(N,'Ie', (5,30,1))
 '''
+
+generate_models_ranges_tab(with_antag=True)

@@ -4,6 +4,7 @@ from modelParams import *
 import nest.raster_plot
 #import time
 import sys
+import os
 
 
 #------------------------------------------
@@ -208,13 +209,14 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
   nest.Simulate(simDuration+offsetDuration)
 
   score = 0
-
+  
   text=[]
   frstr = "#" + str(params['LG14modelID'])+ " , " + antagInjectionSite + ', '
   s = '----- RESULTS -----'
   print s
   text.append(s+'\n')
   if antagInjectionSite == 'none':
+    validationStr = "\n#" + str(params['LG14modelID']) + " , "
     frstr += "none , "
     for N in NUCLEI:
       strTestPassed = 'NO!'
@@ -224,11 +226,22 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
         # if the measured rate is within acceptable values
         strTestPassed = 'OK'
         score += 1
+        validationStr += N + "=OK , "
+      else : 
+      # out of the ranges
+        if expeRate[N] > FRRNormal[N][1] :
+          difference = expeRate[N] - FRRNormal[N][1]
+          validationStr += N + "=NO[+%.4f] , " % difference
+        else :
+          difference = FRRNormal[N][0] - expeRate[N]
+          validationStr += N + "=NO[+%.4f] , " % difference
+      
       frstr += '%f , ' %(expeRate[N])
       s = '* '+N+' - Rate: '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRNormal[N][0])+' , '+str(FRRNormal[N][1])+')'
       print s
       text.append(s+'\n')
   else:
+    validationStr = ""
     frstr += str(antag) + " , "
     for N in NUCLEI:
       expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*simDuration) * 1000
@@ -238,6 +251,16 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
           # if the measured rate is within acceptable values
           strTestPassed = 'OK'
           score += 1
+          validationStr += N + "_" + antag + "=OK , "
+        else : 
+        # out of the ranges
+          if expeRate[N] > FRRNormal[N][1] :
+            difference = expeRate[N] - FRRNormal[N][1]
+            validationStr += N + "_" + antag + "=NO[+%.4f] , " % difference
+          else :
+            difference = FRRNormal[N][0] - expeRate[N]
+            validationStr += N + "_" + antag + "=NO[+%.4f] , " % difference
+        
         s = '* '+N+' with '+antag+' antagonist(s): '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRAnt[N][antag][0])+' , '+str(FRRAnt[N][antag][1])+')'
         print s
         text.append(s+'\n')
@@ -262,7 +285,11 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
   res = open(dataPath+'OutSummary.txt','a')
   res.writelines(text)
   res.close()
-
+  
+  validationFile = open("validationArray.csv",'a')
+  validationFile.write(validationStr)
+  validationFile.close()
+  
   #print "OutSummary :::::::::::::::: ",text
   #-------------------------
   # Displays
@@ -334,7 +361,8 @@ def main():
   
   #execTime = time.localtime()
   #timeStr = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])+':'+str(execTime[5])
-
+  os.system("rm -rf log/*")  
+  
   score = np.zeros((2))
   score += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=rasters)
 

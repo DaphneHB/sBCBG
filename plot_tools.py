@@ -17,7 +17,9 @@ import matplotlib.patches as patches
 import matplotlib.lines as mlines
 import matplotlib.ticker as ticker
 from matplotlib import colors as mcolors
+
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.table import Table
 
 import modelParams as mparams
 from LGneurons import NUCLEI, nbSim, FRRNormal, dataPath, FRRAnt, recType
@@ -674,11 +676,69 @@ def plot_param_by_param(param1, param2, param3=None, dataPath=os.getcwd(), score
 Plotting for the 15 models for the 14 ranges, which one are/is wrong
 for a given parametrization
 '''
-def plot_models_ranges(allFRdata, paramFilePath=os.path.join(os.getcwd(),"modelParams.py"), models=np.arange(0,15,1)) :
-  for mod in models :
-    print "Generating for model #" + str(mod)
-    
-    
+def plot_models_ranges(allFRdata, legend, paramFilePath=os.path.join(os.getcwd(),"modelParams.py"), models=np.arange(0,15,1),filename=None) :
+  clust_data = []
+  fig = plt.figure(1)
+  
+  ax = plt.subplot2grid((3,3), (0,0), colspan=2, rowspan=3)
+  plt.title("Models'results for each range")
+  ax.set_axis_off()  
+  tb = Table(ax,bbox=[0,0,1,1])
+  
+  width = 0.2
+  height = 1.0 / len(models)
+  labels = []
+  score = 0
+  score_max = 0
+  for row,model in enumerate(models) :
+    frates = allFRdata[model]
+    col = 0
+    for frline in frates :
+      frline = frline.split(',')[1:-1]
+      # for each Nucleus, getting the results
+      for nres in frline :
+        score_max += 1
+        nres = nres.rstrip().split('=')
+        labels.append(nres[0])
+        if nres[1]=="OK" :
+          score += 1
+          color = '#BFE8B7' # green
+        else :
+          color = '#E8B7B7' # red
+        tb.add_cell(row,col,width,height,text=nres[1], loc='center',facecolor=color)
+        col += 1
+    tb.add_cell(row,col,width,height,text=str(score), loc='center',facecolor='white')
+    col += 1
+    break    
+  labels.append("Score/" + str(score_max))
+  # Row Labels...
+  for i, label in enumerate(models):
+      tb.add_cell(i, -1, width, height, text=label, loc='right', 
+                  edgecolor='none', facecolor='none')
+  # Column Labels...
+  for j, label in enumerate(labels):
+      tb.add_cell(len(models), j, width, height/5, text=label, loc='center', 
+                         edgecolor='none', facecolor='none')
+  ax.add_table(tb)
+  
+  # LEGEND
+  rowSpan = max(3,1 / len(legend))
+  ax = plt.subplot2grid((3,3), (0,2), colspan=1, rowspan=rowSpan)
+  ax.set_axis_off()  
+  plt.title("Parametrization used")
+  tb = Table(ax,bbox=[0,0,1,1])
+  height = 1. / len(legend)
+  for row,lgd in enumerate(legend) :
+    tb.add_cell(row,0,0.5,height,text=lgd,loc='left',edgecolor='white')
+  ax.add_table(tb)
+  
+  fig.canvas.set_window_title("Passing LG14's tests")
+  fig.tight_layout()
+  fig.set_size_inches(w=11,h=7)
+  if (not filename is None) :
+    plt.savefig(filename)
+  else :
+    plt.show()
 
 ### Tests
 '''
@@ -686,5 +746,6 @@ table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.
 
 plot_inDegrees_boarders_table(table,'0')
 '''
-plot_models_ranges()
 #plot_score_ratio("Ie","GPi",dataPath="/home/daphnehb/OIST/SangoTests/model2/copyBG")
+
+#plot_models_ranges({0: ['#0 , MSN=OK , FSI=NO[+4.8340] , STN=OK , GPe=OK , GPi=NO[+6.6000] , ']},["'GMSN':5.7", "'GFSI':1.3", "'GSTN':1.38", "'GGPe':1.3", "'IeGPe':13.", "'GGPi':1.", "'IeGPi':11."],models=[0])
