@@ -12,6 +12,24 @@ import plot_tools as pltT
 import io_gest as io
 from datetime import datetime
 
+def get_params(paramsFromFile=None) :
+  if paramsFromFile is None :
+    # getting params from params dict
+    global NUCLEI
+    legend = []
+    for N in NUCLEI :
+      # getting the gain for this Nucleus
+      prm = "G" + N
+      val = prm + " = " + str(params[prm])
+      legend.append(val)
+      # also getting the input current
+      if N=="GPe" or N=="GPi" :
+        param = "Ie" + N
+        val = prm + " = " + str(params[prm])
+        legend.append(val)
+      return legend
+  else :
+    return io.get_param_from_file(paramsFromFile)
 '''
 Generate the inDegree table from each nucleus to each nucleus for the given model number
 show the plot
@@ -165,52 +183,97 @@ def generate_param_analyze(param1,param2,param3=None,save=False,path=os.getcwd()
   pltT.plot_param_by_param(param1,param2,param3=param3,save=save,dataPath=path, score=score,model=model)
   
   
-def generate_models_ranges_tab (paramFilePath=os.path.join(os.getcwd(),"modelParams.py"), models=np.arange(0,15,1), score=0, with_antag=False,save=False) :
-  globFile = "allFiringRates.csv"
+  
+def generate_models_ranges_tab(parametrization=None,to_generate=True, validationPath=os.getcwd(),paramFilePath=None, models=np.arange(0,15,1), score=0, with_antag=False,save=False) :
   allFRdata = {}
-  for mod in models :
-    params['LG14modelID'] = mod
-    print "Generating for model #" + str(mod)
-    os.system("rm -r log/*")
-    scoreTab = np.zeros((2))
-    scoreTab += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=False)
-    if with_antag :      
-      for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
-        scoreTab += checkAvgFR(params=params,antagInjectionSite='GPe',antag=a)
+  validFile = os.path.join(validationPath,"validationArray.csv")
     
-      for a in ['All','AMPA','NMDA+AMPA','NMDA','GABAA']:
-        scoreTab += checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
-    if scoreTab[0] < score :
+  if to_generate :
+    # removing the previous tests
+    os.system("rm -rf "+validFile)
+    # TODO charge paramFIlePath modelParams file if it exist
+    for mod in models :
+      params['LG14modelID'] = mod
+      print "Generating for model #" + str(mod)
+      os.system("rm -r log/*")
+      scoreTab = np.zeros((2))
+      scoreTab += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=False)
+      if with_antag :      
+        for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
+          scoreTab += checkAvgFR(params=params,antagInjectionSite='GPe',antag=a)
+      
+        for a in ['All','AMPA','NMDA+AMPA','NMDA','GABAA']:
+          scoreTab += checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
+      if scoreTab[0] < score :
+        continue
+  #path = os.path.dirname(paramFilePath)
+  with open(validFile, 'r') as frFile :
+    FRdata = frFile.readlines()  # list of lines
+  nmodels = []
+  for mod in models :
+    try:
+      data = filter(lambda x : ("#"+str(mod)+" ") in x, FRdata)
+    except  IndexError :
       continue
-    #path = os.path.dirname(paramFilePath)
-    with open("validationArray.csv", 'r') as frFile :
-      FRdata = frFile.readlines()  # list of lines
-    allFRdata[mod] = FRdata
-  global NUCLEI
-  legend = []
-  with open(paramFilePath,'r') as paramFile :
-    paramsData = paramFile.readlines()
-  for N in NUCLEI :
-    # getting the gain for this Nucleus
-    param = "G" + N
-    paramVal_pattern = re.compile("(." + str(param) + ".*:\ *\d+[\.\d*]*),")
-    val = filter(lambda x : paramVal_pattern.search(x), paramsData)[0].replace(" ","")
-    val = val.replace(",\n","")
-    legend.append(val)
-    # also getting the input current
-    if N=="GPe" or N=="GPi" :
-      param = "Ie" + N
-      paramVal_pattern = re.compile("(." + str(param) + ".*:\ *\d+[\.\d*]*),.*")
-      val = filter(lambda x : paramVal_pattern.search(x), paramsData)[0].replace(" ","")
-      val = val.replace(",\n","")
-      legend.append(val)
-  print "Plot array simu generation for the model ",str(mod)
+    nmodels.append(mod)
+    allFRdata[mod] = data
+  legend = get_params(paramsFromFile=paramFilePath)  
+  print "Plot array simu generation for models ",str(nmodels)
   # plotting with plot_tools file
   filename = None
   if save :
       filename = "plots/" + str(datetime.now()) + "modelsValidation.png"
-  pltT.plot_models_ranges(allFRdata, legend, filename=filename)
+  pltT.plot_models_ranges(allFRdata, legend, filename=filename, models=nmodels)
   
+  
+ 
+def generate_gap_from_range(n_var, interv,save=False,to_generate=True,model=0,paramFilePath=None,pathToFile=os.getcwd()) :
+  global NUCLEI
+  print "Simulating for " + n_var
+  if to_generate :
+    if len(interv) != 3 :
+      print "------------ ERROR : Wrong Intervalle"
+      return 1
+    print "****************Simulation with Model %d******************" % model
+    if not params.has_key(n_var) :
+      print "------------ ERROR : Parameter " + n_var + " does not exist"
+      return 1
+    
+    os.system("rm -rf validationArray.csv")
+    # TODO charge modelParams file for params
+    params['LG14modelID'] = model
+    for val in np.arange(*interv) :
+      params[n_var] = float(val)
+      print "****** Simulation for " + n_var + " = " + str(val)
+      # emptying the log file before each simulation
+      os.system("rm -r log/*")
+      # launching simulations
+      checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=False)
+    # getting the FR in firingRates.csv
+  vals = np.arange(*interv)
+  # pattern to get the gap
+  gapPattern = re.compile("([+|-]?\d+[\.\d*]*)")
+  results = dict(zip(NUCLEI,[list() for i in range(len(NUCLEI))])) # nucleus : [gap list]
+    
+  with open(os.path.join(pathToFile,"validationArray.csv")) as varFile :
+    allVardata = varFile.readlines()
+  allVardata = filter(lambda x : ("#" + str(model)) in x, allVardata)
+  for line in allVardata :# Retrieving the FR of each nucleus N
+    line = line.strip().split(",")
+    for ind,nucl in enumerate(NUCLEI) :
+      variations = line[1:-1][ind].strip().split("=")
+      if variations[1] == "OK" :
+        results[nucl].append(0)
+      else :
+        gap = float(gapPattern.findall(variations[1])[0])
+        results[nucl].append(gap)
+  print "Plot array simu generation for the model ",str(model)
+  legend = get_params(paramsFromFile=paramFilePath)
+  # plotting with plot_tools file
+  filename = None
+  if save :
+      filename = "plots/" + "gapPlot_"+n_var+"_model"+str(model)+".png"
+  pltT.plot_gap_from_range(vals, n_var, interv, results, model, filename=filename)
   
 '''
 for md in range(0,15) :
@@ -219,18 +282,24 @@ for md in range(0,15) :
 
 #generate_table(2)
 #generate_margin_plot(glob=False,antag='GPe_AMPA',path="/home/daphnehb/OIST/sBCBG/",limit=100,score=3)
-#generate_margin_plot(glob=True,antag='none',path="/home/daphnehb/OIST/SangoTests/model2/2017_4_5/",limit=100,score=0)
-#generate_param_score_analyze(['G','Ie'], ['MSN','FSI','GPe','GPi','STN'],score=0,model=2, save=True,separated=True,path="/home/daphnehb/OIST/SangoTests/model2/2017_4_5")
+#generate_margin_plot(glob=True,antag='none',path="/home/daphnehb/OIST/SangoTests/model2/2017_4_6/",limit=-1,score=0)
+#generate_param_score_analyze(['G','Ie'], ['MSN','FSI','GPe','GPi','STN'],score=0, save=False,separated=True,path="/home/daphnehb/OIST/SangoTests/model2/2017_4_6")
 #generate_param_analyze("GMSN","IeGPi",param3=None, score=0,save=False,path="/home/daphnehb/OIST/SangoTests/model2/2017_3_29",model=2)
 #generate_fr_by_param('GPe','Ie', (5.,13.,1),with_antag=True)
 #generate_fr_by_param('GPi','Ie', (5.,15.,1),with_antag=True)
+#generate_fr_by_param('MSN','G', (4.,7.,0.25),with_antag=True)
 '''
-generate_fr_by_param('MSN','G', (5.,16.,0.5),with_antag=True)
 generate_fr_by_param('GPi','G', (5.,15.,0.5),with_antag=True)
 generate_fr_by_param('STN','G', (1.2,1.5,0.01),with_antag=True)
 generate_fr_by_param('GPe','G', (0.01,0.5,0.01),with_antag=True)
 #generate_fr_by_param('FSI','G', (0.5,1.8,0.01),with_antag=True)
 '''
+#params['LG14modelID'] = 2
+#generate_fr_by_param('MSN','G', (5.4,6.,0.01),with_antag=True)
+
+#params['LG14modelID'] = 3
+#params['GMSN'] = 5.7
+#generate_fr_by_param('GPi','G', (0.5,6.,0.1),with_antag=True)
 '''
 for N in NUCLEI :
   # for each nucleus generating G plot
@@ -238,5 +307,10 @@ for N in NUCLEI :
   if "GPi" in N :
     generate_fr_by_param(N,'Ie', (5,30,1))
 '''
-
-generate_models_ranges_tab(with_antag=True)
+params['LG14modelID'] = 3
+for g in np.arange(4.,5.75,0.25) :
+  params['GMSN'] = g
+  print "GGGGGGGGGG = ",g
+  generate_models_ranges_tab(parametrization=params, models=[0], to_generate=False,with_antag=False,save=False)
+  break
+#generate_gap_from_range("GMSN",(4.,7.,0.1),to_generate=True,model=5,save=True)

@@ -231,10 +231,10 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
       # out of the ranges
         if expeRate[N] > FRRNormal[N][1] :
           difference = expeRate[N] - FRRNormal[N][1]
-          validationStr += N + "=NO[+%.4f] , " % difference
+          validationStr += N + "=+%.2f , " % difference
         else :
           difference = FRRNormal[N][0] - expeRate[N]
-          validationStr += N + "=NO[+%.4f] , " % difference
+          validationStr += N + "=-%.2f , " % difference
       
       frstr += '%f , ' %(expeRate[N])
       s = '* '+N+' - Rate: '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRNormal[N][0])+' , '+str(FRRNormal[N][1])+')'
@@ -256,10 +256,10 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
         # out of the ranges
           if expeRate[N] > FRRNormal[N][1] :
             difference = expeRate[N] - FRRNormal[N][1]
-            validationStr += N + "_" + antag + "=NO[+%.4f] , " % difference
+            validationStr += N + "_" + antag + "=+%.2f , " % difference
           else :
             difference = FRRNormal[N][0] - expeRate[N]
-            validationStr += N + "_" + antag + "=NO[+%.4f] , " % difference
+            validationStr += N + "_" + antag + "=-%.2f , " % difference
         
         s = '* '+N+' with '+antag+' antagonist(s): '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRAnt[N][antag][0])+' , '+str(FRRAnt[N][antag][1])+')'
         print s
@@ -366,13 +366,13 @@ def main():
   score = np.zeros((2))
   score += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=rasters)
 
-  '''
+  
   for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
     score += checkAvgFR(params=params,antagInjectionSite='GPe',antag=a)
 
   for a in ['All','AMPA','NMDA+AMPA','NMDA','GABAA']:
     score += checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
-  '''
+  
   #-------------------------
   print "******************"
   print "* Score:",score[0],'/',score[1]

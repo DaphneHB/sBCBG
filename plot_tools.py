@@ -59,6 +59,18 @@ def can_plot(lineFR, antag, norm) :
   return antStr, lineFR
   
 
+def plot_param_legend(legend, plot_size,placement) : 
+  # LEGEND
+  rowSpan = max(plot_size[0]-1, 1 / len(legend))
+  ax = plt.subplot2grid(plot_size, placement, colspan=plot_size[1] - placement[1] - 1, rowspan=rowSpan)
+  ax.set_axis_off()  
+  plt.title("Parametrization used")
+  tb = Table(ax,bbox=[0,0,1,1])
+  height = 1. / len(legend)
+  for row,lgd in enumerate(legend) :
+    tb.add_cell(row,0,1.,height,text=lgd,loc='left',edgecolor='white')
+  ax.add_table(tb)
+  
 '''
 To plot the table of the inDegree intervalle for a specific model
 Must be called at the end of the simulation
@@ -530,7 +542,7 @@ val_tab is the list of tuple as (x,y,score)
 
 for each score a specific color
 '''
-def plot_fr_by_var(n_var, val_tab, score_max, interv) :
+def plot_fr_by_var(n_var, val_tab, score_max, interv,model) :
   NUM_COLOR = 0
   score_col = {}
   plot_colors = mcolors.cnames.keys()     # list of colors in matplotlib
@@ -555,7 +567,7 @@ def plot_fr_by_var(n_var, val_tab, score_max, interv) :
   ax.set_title("Point cloud of " + str(n_var) + " with score")
   ax.grid()  
   
-  fig.savefig("plots/FRby"+n_var+".png")
+  fig.savefig("plots/FRby"+n_var+"#"+str(model)+".png")
   plt.close(fig)
   
   
@@ -655,7 +667,7 @@ def plot_param_by_param(param1, param2, param3=None, dataPath=os.getcwd(), score
     # plotting 3D
     axis.scatter(param1_vals,param2_vals,param3_vals,c=cm.hsv(score_vals/max(score_vals)),s=500,marker='s',edgecolor='')
     title = "Score with x=" + str(param1) + ", y=" + str(param2) + " and z=" + str(param3)
-    figname = param1 + "+" + param2 + "+" + param3 + "_score3D"
+    figname = param1 + "+" + param2 + "+" + param3 + "_score3D_#" + str(model)
     axis.set_title(title)
     fig.canvas.set_window_title(figname)
     # displaying the score mean and median for each point
@@ -676,29 +688,32 @@ def plot_param_by_param(param1, param2, param3=None, dataPath=os.getcwd(), score
 Plotting for the 15 models for the 14 ranges, which one are/is wrong
 for a given parametrization
 '''
-def plot_models_ranges(allFRdata, legend, paramFilePath=os.path.join(os.getcwd(),"modelParams.py"), models=np.arange(0,15,1),filename=None) :
-  clust_data = []
+def plot_models_ranges(allFRdata, legend, models=np.arange(0,15,1),filename=None) :
   fig = plt.figure(1)
+  plot_size = (8,10)
   
-  ax = plt.subplot2grid((3,3), (0,0), colspan=2, rowspan=3)
+  ax = plt.subplot2grid(plot_size, (0,0), colspan=5, rowspan=8)
   plt.title("Models'results for each range")
   ax.set_axis_off()  
-  tb = Table(ax,bbox=[0,0,1,1])
+  tb = Table(ax,bbox=[0.1,0,1.7,1.])
   
-  width = 0.2
+  width = 0.25
   height = 1.0 / len(models)
-  labels = []
-  score = 0
-  score_max = 0
-  for row,model in enumerate(models) :
+  modLbl = []
+  for modInd,model in enumerate(models) :
     frates = allFRdata[model]
-    col = 0
-    for frline in frates :
+    for frInd,frline in enumerate(frates) :
+      row = modInd + frInd
+      score = 0
+      score_max = 0
+      col = 0
+      labels = ["Model"]
+      modLbl.append(model)
       frline = frline.split(',')[1:-1]
       # for each Nucleus, getting the results
       for nres in frline :
         score_max += 1
-        nres = nres.rstrip().split('=')
+        nres = nres.strip().split('=')
         labels.append(nres[0])
         if nres[1]=="OK" :
           score += 1
@@ -707,30 +722,30 @@ def plot_models_ranges(allFRdata, legend, paramFilePath=os.path.join(os.getcwd()
           color = '#E8B7B7' # red
         tb.add_cell(row,col,width,height,text=nres[1], loc='center',facecolor=color)
         col += 1
-    tb.add_cell(row,col,width,height,text=str(score), loc='center',facecolor='white')
+      tb.add_cell(row,col,width,height,text=str(score), loc='center',facecolor='white')
     col += 1
-    break    
   labels.append("Score/" + str(score_max))
+  
   # Row Labels...
-  for i, label in enumerate(models):
+  for i, label in enumerate(modLbl):
       tb.add_cell(i, -1, width, height, text=label, loc='right', 
                   edgecolor='none', facecolor='none')
   # Column Labels...
+  global NUCLEI
   for j, label in enumerate(labels):
-      tb.add_cell(len(models), j, width, height/5, text=label, loc='center', 
+      if not (label in NUCLEI or label=="Model") :
+        label = label.split("_")
+        if len(label)==1 : # pour le score
+          label = label[0].split("/")
+          label[1] = "/" + label[1]
+        label = label[0] + "\n" + label[1]
+      tb.add_cell(len(modLbl), j, 0.2, height*2, text=label, loc='center', 
                          edgecolor='none', facecolor='none')
+      '''ax.annotate(label,xy=(j*0.1,0),xycoords='axes fraction', ha='right',va='top',rotation=80,size=8)'''
+  
   ax.add_table(tb)
   
-  # LEGEND
-  rowSpan = max(3,1 / len(legend))
-  ax = plt.subplot2grid((3,3), (0,2), colspan=1, rowspan=rowSpan)
-  ax.set_axis_off()  
-  plt.title("Parametrization used")
-  tb = Table(ax,bbox=[0,0,1,1])
-  height = 1. / len(legend)
-  for row,lgd in enumerate(legend) :
-    tb.add_cell(row,0,0.5,height,text=lgd,loc='left',edgecolor='white')
-  ax.add_table(tb)
+  #plot_param_legend(legend,plot_size,(0,9))
   
   fig.canvas.set_window_title("Passing LG14's tests")
   fig.tight_layout()
@@ -739,6 +754,36 @@ def plot_models_ranges(allFRdata, legend, paramFilePath=os.path.join(os.getcwd()
     plt.savefig(filename)
   else :
     plt.show()
+
+
+def plot_gap_from_range(vals, n_var, interv, nucleus_gap, model, param=None filename=None) :
+  plot_colors = mcolors.cnames.keys()[:len(nucleus_gap)]     # list of colors in matplotlib
+  labels = []
+  
+  if param is None:
+    fig,ax = plt.subplots()
+  else :
+    fig = plt.figure()
+    plot_size = (5,10)
+    plot_param_legend(param,plot_size,(0,9))
+    ax = plt.subplot2grid(plot_size, (0,0), colspan=5, rowspan=8)
+    
+  # for each nucleus plotting its slope
+  for ind,nucl in enumerate(nucleus_gap) :
+    color = plot_colors[ind]
+    labels.append(ax.plot(vals,nucleus_gap[nucl],'-^',c=color,label=color))
+  ax.set_xticks(np.arange(*interv),minor=True)
+  ax.set_xlabel(n_var + " values")
+  ax.set_ylabel("Firing Rates Gaps")
+  ax.legend(nucleus_gap.keys(),title="Nuclei",loc='upper left',bbox_to_anchor=(0.,1.),ncol=3,fontsize='x-small').draggable()
+  ax.set_title("FR gap slope for each nucleus with " + str(n_var) + " variations#" + str(model))
+  ax.grid()
+
+  fig.canvas.set_window_title("Firing Rates Gaps for model " +str(model))  
+  if filename is None :
+    plt.show()
+  else :
+    fig.savefig(filename)
 
 ### Tests
 '''
