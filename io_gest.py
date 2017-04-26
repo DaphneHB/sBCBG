@@ -5,6 +5,7 @@ Created on Mon Mar 13 18:10:27 2017
 @author: daphnehb
 """
 
+import re
 import sys
 import os
 from LGneurons import NUCLEI, nbSim #, inDegree_boarders
@@ -110,7 +111,28 @@ def get_param_from_file(paramFilePath, with_inDegree=False) :
       legend.append(val)
   # TODO also get inDegree
   return legend
-  
+
+def read_validationArray_values (pathToFile=os.getcwd(),model=0) :
+  global NUCLEI
+  # pattern to get the gap
+  gapPattern = re.compile("([+|-]?\d+[\.\d*]*)")
+  results = dict(zip(NUCLEI,[list() for i in range(len(NUCLEI))])) # nucleus : [gap list]
+  with open(os.path.join(pathToFile,"validationArray.csv")) as varFile :
+    allVardata = varFile.readlines()
+  allVardata = filter(lambda x : ("#" + str(model)) in x, allVardata)
+  if allVardata==[] :
+    print "--------- ERROR : No simulation matching this model"
+    exit()
+  for line in allVardata :# Retrieving the FR of each nucleus N
+    line = line.strip().split(",")
+    for ind,nucl in enumerate(NUCLEI) :
+      variations = line[1:-1][ind].strip().split("=")
+      if variations[1] == "OK" :
+        results[nucl].append(0)
+      else :
+        gap = float(gapPattern.findall(variations[1])[0])
+        results[nucl].append(gap)
+  return results
 '''
 table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.65986013986014, 31696.91076923077), 'GPe->GPi': (1.4744055944055943, 23.59048951048951), 'GPe->MSN': (0.0015184513006654568, 0.14121597096188748), 'GPe->GPe': (0.84, 31.919999999999998), 'CMPf->GPe': (0.3426294820717131, 15.760956175298803), 'CMPf->GPi': (0.6013986013986014, 83.59440559440559), 'CMPf->FSI': (0.16165413533834586, 122.21052631578947), 'PTN->FSI': (-1, 5.0), 'CMPf->STN': (1.1168831168831168, 64.77922077922078), 'STN->MSN': (0.0004949334543254689, 0.05394774652147611), 'GPe->STN': (3.25974025974026, 61.935064935064936), 'STN->GPe': (0.2546215139442231, 74.34948207171315), 'STN->GPi': (0.38769230769230767, 63.96923076923076), 'CMPf->MSN': (0.003251663641863279, 7.244706594071385), 'FSI->FSI': (1.0, 140.0), 'CSN->MSN': (-1, 318.0), 'PTN->MSN': (-1, 5.0), 'FSI->MSN': (0.020114942528735632, 43.689655172413794), 'MSN->MSN': (1.0, 509.0), 'PTN->STN': (-1, 262.0), 'CSN->FSI': (-1, 489.0), 'GPe->FSI': (0.07548872180451129, 36.46105263157895)}
 
