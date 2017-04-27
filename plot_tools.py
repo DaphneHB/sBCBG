@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.lines as mlines
 import matplotlib.ticker as ticker
-from matplotlib import colors as mcolors
 
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.table import Table
+import scipy.interpolate as sp
 
 from data_tools import *
 
@@ -571,7 +571,7 @@ def plot_models_ranges(allFRdata, legend, models=np.arange(0,15,1),filename=None
   
   ax.add_table(tb)
   
-  plot_param_legend(legend,plot_size,(0,7))
+  plot_param_legend(legend,plot_size,(1,8 ))
   
   fig.canvas.set_window_title("Passing LG14's tests")
   fig.tight_layout()
@@ -584,7 +584,7 @@ def plot_models_ranges(allFRdata, legend, models=np.arange(0,15,1),filename=None
 
 def plot_gap_from_range(vals, n_var, interv, nucleus_gap, model, param=None, filename=None) :
   plot_colors = mcolors.cnames.keys()[:len(nucleus_gap)]     # list of colors in matplotlib
-  labels = []
+  labels = []  
   
   if param is None:
     fig,ax = plt.subplots()
@@ -616,11 +616,46 @@ def plot_gap_from_range(vals, n_var, interv, nucleus_gap, model, param=None, fil
     fig.savefig(filename)
     
     
-def plot_score_by_value() :
-  plot_colors = mcolors.cnames.keys()     # list of colors in matplotlib
+def plot_score_by_value(parameter, pdata, simu_color, model=None, axis=None,filename=None) :
+  # plot
+  if axis is None :
+    fig,ax = plt.subplots()
+    fig.canvas.set_window_title("Best scores interpolation of simulations according to " + parameter + " #"+str(model))
+    ax.set_ylabel('Score')
+    ax.set_xlabel(parameter)
+  else :
+    ax = axis
+  NUM_COLOR = 0
+  plot_colors = mcolors.cnames.keys()     # list of colors in matplotlib  
   
-  
-
+  x = []
+  y = []
+  for val,simu_scoreList in pdata.items() :
+    best_simu,best_score = simu_scoreList["best"]
+    # getting the color for the simu
+    if simu_color.has_key(best_simu) :
+      color = simu_color[best_simu]
+    else :
+      color = plot_colors[NUM_COLOR]
+      simu_color[best_simu] = color
+      NUM_COLOR += 2
+    # plotting
+    ax.scatter([val],[int(best_score)], s=200, c=color,edgecolor='')
+    x.append(val)
+    y.append(int(best_score))
+  # drawing a slope by interpolation
+  '''
+  interpolation = sp.interp1d(x,y,kind='cubic')
+  ax.plot(xi,interpolation(xi))
+  '''
+  # plot adujstements
+  ax.grid()
+  xi = np.linspace(x[0],x[-1],(x[-1]-x[0])*10)
+  ax.set_xticks(xi,minor=True)
+  ax.set_yticks(y,minor=True)
+  if not filename is None and axis is None :
+    fig.savefig(filename)
+  return simu_color
 ### Tests
 '''
 table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.65986013986014, 31696.91076923077), 'GPe->GPi': (1.4744055944055943, 23.59048951048951), 'GPe->MSN': (0.0015184513006654568, 0.14121597096188748), 'GPe->GPe': (0.84, 31.919999999999998), 'CMPf->GPe': (0.3426294820717131, 15.760956175298803), 'CMPf->GPi': (0.6013986013986014, 83.59440559440559), 'CMPf->FSI': (0.16165413533834586, 122.21052631578947), 'PTN->FSI': (-1, 5.0), 'CMPf->STN': (1.1168831168831168, 64.77922077922078), 'STN->MSN': (0.0004949334543254689, 0.05394774652147611), 'GPe->STN': (3.25974025974026, 61.935064935064936), 'STN->GPe': (0.2546215139442231, 74.34948207171315), 'STN->GPi': (0.38769230769230767, 63.96923076923076), 'CMPf->MSN': (0.003251663641863279, 7.244706594071385), 'FSI->FSI': (1.0, 140.0), 'CSN->MSN': (-1, 318.0), 'PTN->MSN': (-1, 5.0), 'FSI->MSN': (0.020114942528735632, 43.689655172413794), 'MSN->MSN': (1.0, 509.0), 'PTN->STN': (-1, 262.0), 'CSN->FSI': (-1, 489.0), 'GPe->FSI': (0.07548872180451129, 36.46105263157895)}

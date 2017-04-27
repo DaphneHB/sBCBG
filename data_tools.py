@@ -13,6 +13,7 @@ import numpy as np
 from operator import add
 
 from pylab import cm
+from matplotlib import colors as mcolors
 
 from LGneurons import NUCLEI, nbSim, FRRNormal, dataPath, FRRAnt, recType
 import modelParams as mparams
@@ -129,6 +130,7 @@ def get_count_for_score(n_var, dataPath=os.getcwd(), score=0, model=None,axis=No
         varN_values[scKeys][val] = 0
   return val_tab, varN_values
   
+
 def get_param_param_scores(param1, param2, param3=None, dataPath=os.getcwd(), score=0, model=None) :
   param1_vals = []
   param2_vals = []
@@ -199,3 +201,52 @@ def get_param_param_scores(param1, param2, param3=None, dataPath=os.getcwd(), sc
   colmap.set_array(score_vals)
   
   return param1_vals, param2_vals, param3_vals, eachPoint, score_vals, colmap
+  
+  
+def get_data_by_model(parameters,model=None,path=os.getcwd(),score=0) :
+  global NUCLEI
+  SIMU_NB = 0
+  
+  results = {} # {param : {value : {simuNB : (score, color)}} } where simuNB is given incrementally
+  model_pattern = re.compile("LG14modelID.*:\ *(\d+).")  
+  for fName in os.listdir(path) :
+    dirPath = os.path.join(path,fName)
+    if os.path.isdir(dirPath) and fName.startswith("2017") :
+      try:
+        with open(os.path.join(dirPath, "score.txt"),"r") as scoreFile :
+          obt_score = float(scoreFile.readline().rstrip())
+      except Exception :
+        continue
+      if obt_score < float(score) :
+        continue
+      # If the score is ok
+      # lets check the model nb by getting the modelParams
+      with open(dirPath+"/modelParams.py", 'r') as paramsFile :
+        Paramsdata = paramsFile.readlines()
+        # only getting the results of the expected model
+      if (not model is None) :
+        mod = int(model_pattern.findall(filter(lambda x : model_pattern.search(x), Paramsdata)[0])[0])
+        if (mod != model) :
+          continue
+      value_dict = {SIMU_NB : obt_score}
+      for prm in parameters:
+        paramVal_pattern = re.compile(str(prm) + ".*:\ *(\d+[\.\d*]*).*")
+        val = float(paramVal_pattern.findall(filter(lambda x : paramVal_pattern.search(x), Paramsdata)[0])[0])
+        if results.has_key(prm) :
+          if results[prm].has_key(val) :
+            results[prm][val].update(value_dict)
+          else :
+            results[prm][val] = value_dict
+        else :
+          param_dict = {val : value_dict}
+          results[prm] = param_dict
+        # generating for best :
+        if results[prm][val].has_key("best") :
+          # comparing
+          sim_best,score_best = results[prm][val]["best"]
+          if score_best < obt_score :
+            results[prm][val].update({"best" : (SIMU_NB,obt_score)})
+        else :
+          results[prm][val].update({"best" : (SIMU_NB,obt_score)})
+      SIMU_NB += 1
+  return results

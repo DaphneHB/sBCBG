@@ -65,6 +65,7 @@ def get_params(paramsFromFile=None,remove=[]) :
     return legend
   else :
     return io.get_param_from_file(paramsFromFile)
+    
 '''
 Generate the inDegree table from each nucleus to each nucleus for the given model number
 show the plot
@@ -272,6 +273,42 @@ def generate_gap_from_range(n_var, interv,save=False,to_generate=True,model=0,pa
       filename = "plots/" + str(datetime.now()) + "gapPlot_"+n_var+"_model"+str(model)+".png"
   pltT.plot_gap_from_range(vals, n_var, interv, results, model, filename=filename,param=legend)
   
+  
+  
+def generate_best_score_comp(figAxes=None,path=os.getcwd(), score=0, model=None, separated=True, save=False) :
+  global NUCLEI
+  # whether we want to plot for multiple params
+  nbN = len(NUCLEI)
+  parameters = ["G" + N for N in NUCLEI] + ["IeGPe","IeGPi"]
+  # retrieving the nucleus score per simulation according to the value and param
+  paramData = pltT.get_data_by_model(parameters,model=model,path=path,score=score)
+  if paramData == {}:
+    print "----------------- ERREUR : No data to analyse"
+    return 1
+  simu_color = {}  # simu_color = {simu : color}
+  if not separated  :
+    if figAxes is None :
+      fig, axes = pltT.plt.subplots(nrows=1 , ncols=len(parameters))
+      fig.canvas.set_window_title("Best scores for every simulations #" + str(model))
+    else :
+      fig,axes = figAxes
+      axes.set_title("#" + str(model))
+    for i,p in enumerate(parameters) :
+      ax = axes[i]
+      if i==0 :
+        ax.set_ylabel('Score')
+      simu_color = pltT.plot_score_by_value(p, paramData[p], simu_color, model=model, axis=ax,filename=None)
+    if save :
+      nucleiStr = "_" + "+".join(parameters)
+      fig.savefig("plots/" + str(datetime.now()) + "bestScores" + nucleiStr + "#" + str(model) + ".png")
+  else :
+    for i,p in enumerate(parameters) :
+      plotName = "plots/" + str(datetime.now()) + "bestScores" + p + "#" + str(model) + ".png"
+      simu_color = pltT.plot_score_by_value(p, paramData[p], simu_color, model=model, axis=None,filename=plotName)
+  if not save :
+    pltT.plt.show()
+
+
 '''
 for md in range(0,15) :
   generate_table(md,save=True)
@@ -311,10 +348,6 @@ for g in np.arange(4.,6.,0.1) :
   print "GGGGGGGGGG = ",g
   generate_models_ranges_tab(parametrization=params, to_generate=True,with_antag=True,save=True)
 '''
-for gstn in [1.4,1.35,1.3,1.2,1.1,1.] :
-  params['GSTN'] = gstn
-  for gfsi in [1.4,1.3,1.2,1.1,1.0] :
-    params['GFSI'] = gfsi
-    for ggpe in [1.,1.1,1.2,1.3] :
-      params['GGPE'] = ggpe
-      generate_gap_from_range("GMSN",(3.7,5.5,0.1),to_generate=True,model=5,save=True,removing=[])
+#generate_gap_from_range("GMSN",(4.,7.,0.1),to_generate=False,model=0,save=True,removing=[])
+
+generate_best_score_comp(figAxes=None,path="/home/daphnehb/OIST/SangoTests/model5/2017_4_13/", score=0, model=5, separated=True, save=False)
