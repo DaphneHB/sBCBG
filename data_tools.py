@@ -6,7 +6,26 @@ Created on Thu Apr 20 17:44:34 2017
 """
 
 import re
+import os
+import random
+import commands
+import numpy as np
+from operator import add
+
+from pylab import cm
+
 from LGneurons import NUCLEI, nbSim, FRRNormal, dataPath, FRRAnt, recType
+import modelParams as mparams
+
+'''
+Display on a plot the reason why a slope or bars cant ba displayed
+'''
+def plot_print_wrong(ax,reason) :
+  if not ax is None :
+    x0, x1, y0, y1 = ax.axis()
+    ax.text(x1 - x0 + 2., y1 - y0, reason, ha="center", family='sans-serif', size=12)
+  return 1
+  
 
 '''
 According to the norm param, the function will normalize 
@@ -51,7 +70,7 @@ def get_inDegree_to_plot (table_dict) :
         clust_data[i*nbNuclei+j][4] = "---"
   return clust_data
   
-def get_data_from_file(filterFct, filename=None) :
+def get_data_from_file(filterFct, filename=None,model=None) :
   # retrieving data in the input file allFiringRates.csv
   if filename is None :
     filename = 'allFiringRates'
@@ -61,10 +80,10 @@ def get_data_from_file(filterFct, filename=None) :
   # retrieving only the simu with the choosen model if there is
   if (not model is None) :
     allFRdata = filter(filterFct ,allFRdata)
+  return allFRdata
   
-def get_score_() :
+def get_count_for_score(n_var, dataPath=os.getcwd(), score=0, model=None,axis=None) :
   val_tab = []
-  n_var = variable + nucleus
   varN_values = {}   # dict {score : {val : nb}}
   model_pattern = re.compile("LG14modelID.*:\ *(\d+).")
   paramVal_pattern = re.compile(n_var + ".*:\ *(\d+[\.\d*]*).*")
@@ -105,7 +124,78 @@ def get_score_() :
         varN_values[obt_score][val] = 1
   # for every score # for values of the param that are not in score, put the number to 0
   for scKeys,valDict in varN_values.items() :
-      for i,val in enumerate(val_tab) :
-        if not valDict.has_key(val) :
-          varN_values[scKeys][val] = 0
- 
+    for i,val in enumerate(val_tab) :
+      if not valDict.has_key(val) :
+        varN_values[scKeys][val] = 0
+  return val_tab, varN_values
+  
+def get_param_param_scores(param1, param2, param3=None, dataPath=os.getcwd(), score=0, model=None) :
+  param1_vals = []
+  param2_vals = []
+  param3_vals = []
+  score_vals = []
+  eachPoint = {}  # dict of list as point coordinate : score list
+  
+  model_pattern = re.compile("LG14modelID.*:\ *(\d+).")
+  param1Val_pattern = re.compile(str(param1) + ".*:\ *(\d+[\.\d*]*).*")
+  param2Val_pattern = re.compile(str(param2) + ".*:\ *(\d+[\.\d*]*).*")
+  param3Val_pattern = re.compile(str(param3) + ".*:\ *(\d+[\.\d*]*).*")
+  for fName in os.listdir(dataPath) :
+    dirPath = os.path.join(dataPath,fName)
+    if os.path.isdir(dirPath) and fName.startswith("2017") :
+      try:
+        with open(os.path.join(dirPath, "score.txt"),"r") as scoreFile :
+          obt_score = float(scoreFile.readline().rstrip())
+      except Exception :
+        continue
+      if obt_score < float(score) :
+        continue
+      # If the score is ok
+      # lets check the model nb by getting the modelParams
+      with open(dirPath+"/modelParams.py", 'r') as paramsFile :
+        Paramsdata = paramsFile.readlines()
+        # only getting the results of the expected model
+      if (not model is None) :
+        mod = int(model_pattern.findall(filter(lambda x : model_pattern.search(x), Paramsdata)[0])[0])
+        if (mod != model) :
+          continue
+      # get values
+      point = []
+      try :
+        val1 = float(param1Val_pattern.findall(filter(lambda x : param1Val_pattern.search(x), Paramsdata)[0])[0])
+        param1_vals.append(val1)
+        point.append(val1)
+      except IndexError: # if there were no result : the variable name is wrong
+        reason = "------------- ERROR : Wrong variable name [" + str(param1) + "]"
+        print reason
+        return plot_print_wrong(axis,reason)
+      try :
+        val2 = float(param2Val_pattern.findall(filter(lambda x : param2Val_pattern.search(x), Paramsdata)[0])[0])
+        param2_vals.append(val2)
+        point.append(val2)
+      except IndexError: # if there were no result : the variable name is wrong
+        reason = "------------- ERROR : Wrong variable name [" + str(param2) + "]"
+        print reason
+        return plot_print_wrong(axis,reason)
+      if not param3 is None :
+        try :
+          val3 = float(param3Val_pattern.findall(filter(lambda x : param3Val_pattern.search(x), Paramsdata)[0])[0])
+          param3_vals.append(val3)
+          point.append(val3)
+        except IndexError: # if there were no result : the variable name is wrong
+          reason = "------------- ERROR : Wrong variable name [" + str(param3) + "]"
+          print reason
+          return plot_print_wrong(axis,reason)
+      # saving every score for each point
+      point = tuple(point)
+      if eachPoint.has_key(point) :
+        eachPoint[point].append(obt_score)
+      else :
+        eachPoint[point] = [obt_score]
+      score_vals.append(obt_score)
+  # end for
+  score_vals = np.array(score_vals)
+  colmap = cm.ScalarMappable(cmap=cm.hsv)
+  colmap.set_array(score_vals)
+  
+  return param1_vals, param2_vals, param3_vals, eachPoint, score_vals, colmap

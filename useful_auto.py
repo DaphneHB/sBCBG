@@ -58,8 +58,8 @@ def get_params(paramsFromFile=None,remove=[]) :
         legend.append(val)
       # also getting the input current
       if N=="GPe" or N=="GPi" :
-        param = "Ie" + N
-        if not param in remove :
+        prm = "Ie" + N
+        if not prm in remove :
           val = prm + " = " + str(params[prm])
           legend.append(val)
     return legend
@@ -278,10 +278,10 @@ for md in range(0,15) :
 '''
 
 #generate_table(2)
-#generate_margin_plot(glob=False,antag='GPe_AMPA',path="/home/daphnehb/OIST/sBCBG/",limit=100,score=3)
+#generate_margin_plot(glob=False,antag='all',model=14,path="/home/daphnehb/OIST/sBCBG3/",limit=100,score=3)
 #generate_margin_plot(glob=True,antag='none',path="/home/daphnehb/OIST/SangoTests/model5/2017_4_13/",limit=-1,score=0)
-#generate_param_score_analyze(['G','Ie'], ['MSN','FSI','GPe','GPi','STN'],score=0, save=False,separated=True,path="/home/daphnehb/OIST/SangoTests/model2/2017_4_6")
-#generate_param_analyze("GMSN","GFSI",param3="GSTN", score=11,save=False,path="/home/daphnehb/OIST/SangoTests/model5/2017_4_13",model=5)
+#generate_param_score_analyze(['G','Ie'], ['MSN','FSI','GPe','GPi','STN'],score=0, save=False,separated=True,path="/home/daphnehb/OIST/SangoTests/model1/2017_4_21")
+#generate_param_analyze("GMSN","GFSI",param3="GSTN", score=11,save=False,path="/home/daphnehb/OIST/SangoTests/model1/2017_4_21",model=1)
 #generate_fr_by_param('GPe','Ie', (5.,13.,1),with_antag=True)
 #generate_fr_by_param('GPi','Ie', (5.,15.,1),with_antag=True)
 #generate_fr_by_param('MSN','G', (4.,7.,0.25),with_antag=True)
@@ -304,7 +304,17 @@ for N in NUCLEI :
   if "GPi" in N :
     generate_fr_by_param(N,'Ie', (5,30,1))
 '''
-for gfsi in np.arange(1.,1.6,0.1):
-  params['GFSI'] = gfsi
-  for mod in [0,1,3,4,5,6,7,13,14] :
-      generate_gap_from_range("GMSN",(4.,7.,0.1),to_generate=True,model=mod,save=True,removing=[])
+#params['LG14modelID'] = 3
+'''
+for g in np.arange(4.,6.,0.1) :
+  params['GMSN'] = g
+  print "GGGGGGGGGG = ",g
+  generate_models_ranges_tab(parametrization=params, to_generate=True,with_antag=True,save=True)
+'''
+for gstn in [1.4,1.35,1.3,1.2,1.1,1.] :
+  params['GSTN'] = gstn
+  for gfsi in [1.4,1.3,1.2,1.1,1.0] :
+    params['GFSI'] = gfsi
+    for ggpe in [1.,1.1,1.2,1.3] :
+      params['GGPE'] = ggpe
+      generate_gap_from_range("GMSN",(3.7,5.5,0.1),to_generate=True,model=5,save=True,removing=[])

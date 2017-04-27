@@ -4,14 +4,6 @@ Created on Mon Mar 13 17:32:40 2017
 
 @author: daphnehb
 """
-import os
-import re
-import random
-import commands
-import numpy as np
-from operator import add
-
-from pylab import cm
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.lines as mlines
@@ -20,8 +12,6 @@ from matplotlib import colors as mcolors
 
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.table import Table
-
-import modelParams as mparams
 
 from data_tools import *
 
@@ -312,7 +302,7 @@ def plot_margins_and_simus(filename=None,norm=False, antag=None, model=None, sep
   if antag :
     norm = False  # setting norm to false auto
   
-  allFRdata = get_data_from_file(lambda x : ("#" + str(model)) in x,filename)
+  allFRdata = get_data_from_file(lambda x : ("#" + str(model)) in x,filename=filename,model=model)
   if allFRdata == [] :
     print "---------- ERROR : No corresponding model simulated"
     return 1
@@ -370,16 +360,6 @@ def plot_margins_and_simus(filename=None,norm=False, antag=None, model=None, sep
 
 
 '''
-Display on a plot the reason why a slope or bars cant ba displayed
-'''
-def plot_print_wrong(ax,reason) :
-  if not ax is None :
-    x0, x1, y0, y1 = ax.axis()
-    ax.text(x1 - x0 + 2., y1 - y0, reason, ha="center", family='sans-serif', size=12)
-  return 1
-  
-  
-'''
 Plotting number of simulations which get a score > score param
 for each value of variable for the nucleus
 nucleus is in NUCLEI
@@ -397,13 +377,18 @@ def plot_score_ratio(variable, nucleus, dataPath=os.getcwd(), score=0, model=Non
     reason = "------------ ERROR : Wrong variable name [" + variable + "]"
     print reason
     return plot_print_wrong(axis,reason)
-  
+  n_var = variable + nucleus
+  count = get_count_for_score(n_var, dataPath=dataPath, score=score, model=model,axis=axis)
+  if type(count) is int :
+    return count
+  else :
+    val_tab,varN_values = count
   # plot
   width = (max(val_tab)-min(val_tab))/(len(val_tab)*len(val_tab))
   plt_lgd = {}
   if axis is None :
     fig,ax = plt.subplots()
-    fig.canvas.set_window_title("Score of simulations according to the " + n_var + " param value")
+    fig.canvas.set_window_title("Score of simulations according to the " + n_var + " param value #"+str(model))
     ax.set_ylabel('Number of simulations')
   else :
     ax = axis
@@ -478,11 +463,6 @@ def plot_param_by_param(param1, param2, param3=None, dataPath=os.getcwd(), score
   NUM_COL = 0
   global NUCLEI
   # paramX_vals dict as : {param: (index in score_vals,)}
-  param1_vals = []
-  param2_vals = []
-  param3_vals = []
-  score_vals = []
-  eachPoint = {}  # dict of list as point coordinate : score list
   
   fig = plt.figure(figsize=(8,6))
   if not param3 is None :
@@ -490,65 +470,8 @@ def plot_param_by_param(param1, param2, param3=None, dataPath=os.getcwd(), score
   else :
     axis = fig.add_subplot(111)
     
-  model_pattern = re.compile("LG14modelID.*:\ *(\d+).")
-  param1Val_pattern = re.compile(str(param1) + ".*:\ *(\d+[\.\d*]*).*")
-  param2Val_pattern = re.compile(str(param2) + ".*:\ *(\d+[\.\d*]*).*")
-  param3Val_pattern = re.compile(str(param3) + ".*:\ *(\d+[\.\d*]*).*")
-  for fName in os.listdir(dataPath) :
-    dirPath = os.path.join(dataPath,fName)
-    if os.path.isdir(dirPath) and fName.startswith("2017") :
-      with open(os.path.join(dirPath, "score.txt"),"r") as scoreFile :
-        obt_score = float(scoreFile.readline().rstrip())
-      if obt_score < float(score) :
-        continue
-      # If the score is ok
-      # lets check the model nb by getting the modelParams
-      with open(dirPath+"/modelParams.py", 'r') as paramsFile :
-        Paramsdata = paramsFile.readlines()
-        # only getting the results of the expected model
-      if (not model is None) :
-        mod = int(model_pattern.findall(filter(lambda x : model_pattern.search(x), Paramsdata)[0])[0])
-        if (mod != model) :
-          continue
-      # get values
-      point = []
-      try :
-        val1 = float(param1Val_pattern.findall(filter(lambda x : param1Val_pattern.search(x), Paramsdata)[0])[0])
-        param1_vals.append(val1)
-        point.append(val1)
-      except IndexError: # if there were no result : the variable name is wrong
-        reason = "------------- ERROR : Wrong variable name [" + str(param1) + "]"
-        print reason
-        return plot_print_wrong(axis,reason)
-      try :
-        val2 = float(param2Val_pattern.findall(filter(lambda x : param2Val_pattern.search(x), Paramsdata)[0])[0])
-        param2_vals.append(val2)
-        point.append(val2)
-      except IndexError: # if there were no result : the variable name is wrong
-        reason = "------------- ERROR : Wrong variable name [" + str(param2) + "]"
-        print reason
-        return plot_print_wrong(axis,reason)
-      if not param3 is None :
-        try :
-          val3 = float(param3Val_pattern.findall(filter(lambda x : param3Val_pattern.search(x), Paramsdata)[0])[0])
-          param3_vals.append(val3)
-          point.append(val3)
-        except IndexError: # if there were no result : the variable name is wrong
-          reason = "------------- ERROR : Wrong variable name [" + str(param3) + "]"
-          print reason
-          return plot_print_wrong(axis,reason)
-      # saving every score for each point
-      point = tuple(point)
-      if eachPoint.has_key(point) :
-        eachPoint[point].append(obt_score)
-      else :
-        eachPoint[point] = [obt_score]
-      score_vals.append(obt_score)
-  # end for
-  score_vals = np.array(score_vals)
-  colmap = cm.ScalarMappable(cmap=cm.hsv)
-  colmap.set_array(score_vals)
-  
+  param1_vals, param2_vals, param3_vals, eachPoint, score_vals, colmap = get_param_param_scores(param1, param2, param3=None, dataPath=dataPath, score=score, model=model)
+  print "SCORES" ,score_vals
   axis.set_xlabel(str(param1) + ' values')
   axis.set_ylabel(str(param2) + ' values')
   if param3 is None :
@@ -680,7 +603,7 @@ def plot_gap_from_range(vals, n_var, interv, nucleus_gap, model, param=None, fil
     labels.append(ax.plot(vals,nucleus_gap[nucl],'-^',c=color,label=color))
   ax.set_xticks(np.arange(*interv),minor=True)
   ax.set_xlabel(n_var + " values")
-  ax.set_yticks(np.arange(lower_gap+10,higher_gap+10,1),minor=True)
+  ax.set_yticks(np.arange(lower_gap,higher_gap+15,1),minor=True)
   ax.set_ylabel("Firing Rates Gaps")
   ax.legend(nucleus_gap.keys(),title="Nuclei",loc='upper left',bbox_to_anchor=(0.,1.),ncol=3,fontsize='x-small').draggable()
   ax.set_title("FR gap slope for each nucleus with " + str(n_var) + " variations#" + str(model))
