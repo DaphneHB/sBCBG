@@ -15,7 +15,7 @@ from operator import add
 from pylab import cm
 from matplotlib import colors as mcolors
 
-from LGneurons import NUCLEI, nbSim, FRRNormal, dataPath, FRRAnt, recType
+from LGneurons import *
 import modelParams as mparams
 
 '''
@@ -41,6 +41,48 @@ def normalize(frlist,norm=False) :
     new_list[ind] = (frlist[ind]-FRRNormal[N][0])/float(FRRNormal[N][1] - FRRNormal[N][0])
   return new_list
   
+'''
+Compute the inDegree for each nucleus-nucleus connection for the given model
+Compute the min board, the max board and the actual used value
+'''
+def retreive_inDegree(model, prms=None) :
+  if prms is None :
+    prms = mparams.params
+  prms['LG14modelID'] = model
+  
+  print "Generating inDegree Table for model " + str(model)
+  loadLG14params(model)
+
+  inDegree_boarders = {}
+  
+  global NUCLEI,nbSim,alpha,neuronCounts,P
+  # Retreiving the inDegrees and ranges
+  for nameTgt in NUCLEI :
+    for nameSrc in nbSim.keys() :
+      key = nameSrc + "->" + nameTgt
+      if alpha.has_key(key) and alpha[key] != 0 :
+        indegVar = "inDeg" + nameSrc + nameTgt
+        nuclNbVar = "nb" + nameTgt
+        maxInDegree = 0
+        minInDegree = 0
+        # nu is the average total synaptic inputs a neuron of tgt receives from different neurons of src
+        if nameSrc=='CSN' or nameSrc=='PTN':
+          maxInDegree = alpha[nameSrc+'->'+nameTgt]
+          # a negative inDegree being impossible this mean its unkonwn
+          minInDegree = -1  
+        else:
+          maxInDegree = neuronCounts[nameSrc] / float(neuronCounts[nameTgt]) * P[nameSrc+'->'+nameTgt] * alpha[nameSrc+'->'+nameTgt]
+          # getting the computation of the min inDegree
+          minInDegree = neuronCounts[nameSrc] / float(neuronCounts[nameTgt]) * P[nameSrc+'->'+nameTgt]
+        # inDegree
+        inDegree = prms[indegVar] #min(prms[indegVar],prms[nuclNbVar])
+        # uploading the acceptable intervalles of inDegree for this model
+        inDegree_boarders[nameSrc+'->'+nameTgt] = (minInDegree, maxInDegree, inDegree)
+        if model != 9:
+          exit
+  # everything is in the global variable : inDegree_boarders  
+  return inDegree_boarders
+
 
 '''
 Function which organise the inDegrees in a 5*nb BG Nulcei*(nb BG nuclei + other Nuclei)
@@ -250,3 +292,13 @@ def get_data_by_model(parameters,model=None,path=os.getcwd(),score=0) :
           results[prm][val].update({"best" : (SIMU_NB,obt_score)})
       SIMU_NB += 1
   return results
+  
+def merge_files(srcFile, destFile,path=os.getcwd()) :
+  os.system("for f in " + os.path.join(path,srcFile) + " ; do cat $f >> " + os.path.join(path,destFile) + " ; done")
+  
+'''
+Get the gaps in validation
+'''
+def get_data_from_simu() :
+  pass
+

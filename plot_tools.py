@@ -603,7 +603,8 @@ def plot_gap_from_range(vals, n_var, interv, nucleus_gap, model, param=None, fil
     labels.append(ax.plot(vals,nucleus_gap[nucl],'-^',c=color,label=color))
   ax.set_xticks(np.arange(*interv),minor=True)
   ax.set_xlabel(n_var + " values")
-  ax.set_yticks(np.arange(lower_gap,higher_gap+15,1),minor=True)
+  upper_margin = abs(higher_gap - abs(lower_gap)) * 1.5
+  ax.set_yticks(np.arange(lower_gap,higher_gap+upper_margin,1),minor=True)
   ax.set_ylabel("Firing Rates Gaps")
   ax.legend(nucleus_gap.keys(),title="Nuclei",loc='upper left',bbox_to_anchor=(0.,1.),ncol=3,fontsize='x-small').draggable()
   ax.set_title("FR gap slope for each nucleus with " + str(n_var) + " variations#" + str(model))

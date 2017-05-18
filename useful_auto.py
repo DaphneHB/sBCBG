@@ -12,8 +12,42 @@ import plot_tools as pltT
 import io_gest as io
 from datetime import datetime
 
+'''
+To download the accurate parametrization for the current model
+'''
+def switch_model(model) :
+  if model==0 :
+    from modelParams0 import params
+  elif model==1 :
+    from modelParams1 import params
+  elif model==2 :
+    from modelParams2 import params
+  elif model==3 :
+    from modelParams3 import params
+  elif model==4 :
+    from modelParams4 import params
+  elif model==5 :
+    from modelParams5 import params
+  elif model==6 :
+    from modelParams6 import params
+  elif model==7 :
+    from modelParams7 import params
+  elif model==8 :
+    from modelParams8 import params
+  elif model==9 :
+    from modelParams9 import params
+  elif model==10 :
+    from modelParams10 import params
+  elif model==11 :
+    from modelParams11 import params
+  elif model==12 :
+    from modelParams12 import params
+  elif model==13 :
+    from modelParams13 import params
+  elif model==14 :
+    from modelParams14 import params
 
-def launching_exec_by_models(validFile,models=np.arange(0,15,1),score=0,with_antag=False) :
+def launching_exec_by_models(validFile,models=np.arange(0,15,1),score=0) :
   # removing the previous tests
   os.system("rm -rf "+validFile)
   # TODO charge paramFIlePath modelParams file if it exist
@@ -32,7 +66,7 @@ def launching_exec_by_models(validFile,models=np.arange(0,15,1),score=0,with_ant
     if scoreTab[0] < score :
       continue
       
-def launching_exec_by_intervalle(n_var,interv,validFile,model=0) :
+def launching_exec_by_intervalle(n_var,interv,validFile,model=0,with_antag=False) :
   os.system("rm -rf " + validFile)
   # TODO charge modelParams file for params
   params['LG14modelID'] = model
@@ -43,8 +77,53 @@ def launching_exec_by_intervalle(n_var,interv,validFile,model=0) :
     os.system("rm -r log/*")
     # launching simulations
     checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=False)
+    if with_antag :      
+      for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
+        checkAvgFR(params=params,antagInjectionSite='GPe',antag=a)
+    
+      for a in ['All','AMPA','NMDA+AMPA','NMDA','GABAA']:
+        checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
+    
+'''
+Compute the inDegree for a certain model to be in the ranges the relative way #9 is
 
+According to this formula
+For model #9
+  - for each connection k:
+      the Liénard model defines inDegree(#9)^{max}_{k} and
+inDegree(#9)^{min}_{k}
+      I chose some inDegree(#9)_k value
+For any other model #N, set inDegree(#N)_{k} the following way:
+  inDegree(#N)_{k} = inDegree(#N)^{min}_k + ( inDegree(#9)_k -
+inDegree(#9)^{min}_k ) * (inDegree(#N)^{max}_k - inDegree(#N)^{min}_k) /
+(inDegree(#9)^{max}_k - inDegree(#9)^{min}_k)
+'''
+def compute_inDegree(model) :
+  from modelParams9 import params as params9
+  print params9
+  exit
+  if model==9 :
+    return pltT.retreive_inDegree(model,prms=params9)
+  else :
+    nine_boarders = pltT.retreive_inDegree(9,prms=params9)
+    model_boarders = pltT.retreive_inDegree(model)
+    for nameTgt in NUCLEI :
+      for nameSrc in nbSim.keys() :
+        key = nameSrc + "->" + nameTgt
+        if model_boarders.has_key(key) and nine_boarders.has_key(key) :
+          # according to the formula :
+          nine_min,nine_max,nine_val = nine_boarders[key]
+          model_min,model_max,model_val = model_boarders[key]
+          new_inDegree = model_min + (nine_val - nine_min) * (model_max - model_min) / (nine_max - nine_min)
+          # saving        
+          model_boarders[key] = model_min,model_max, new_inDegree
+    return model_boarders
+        
 
+'''
+Retrieve the parametrization used
+Stocked in the global variable params or modelParams.py file
+'''
 def get_params(paramsFromFile=None,remove=[]) :
   if paramsFromFile is None :
     # getting params from params dict
@@ -71,19 +150,19 @@ Generate the inDegree table from each nucleus to each nucleus for the given mode
 show the plot
 '''
 def generate_table(model,save=False) :
+  switch_model(model)
   params['LG14modelID'] = model
   print "Generating inDegree Table for model " + str(model)
-  os.system("rm -r log/*")
-  score = np.zeros((2))
-  score += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=False)
+  
+  inDegree_boarders = pltT.retreive_inDegree(model)
   
   print "Plot table generation for the model ",str(model)
   
-  global inDegree_boarders
+  
   if save :
     filename = "tables/inDegreeTable#" + str(model) + ".png"
   else :
-    filenamae = None
+    filename = None
   pltT.plot_inDegrees_boarders_table(inDegree_boarders,model=model,filename=filename)
   
 
@@ -248,8 +327,9 @@ def generate_models_ranges_tab(parametrization=None,to_generate=True, validation
   
   
  
-def generate_gap_from_range(n_var, interv,save=False,to_generate=True,model=0,paramFilePath=None,pathToFile=os.getcwd(),removing=[]) :
+def generate_gap_from_range_local(n_var, interv,save=False,to_generate=True,model=0,paramFilePath=None,pathToFile=os.getcwd(),removing=[],with_antag=False) :
   global NUCLEI
+  validFile = os.path.join(pathToFile,"validationArray.csv")
   print "Simulating for " + n_var
   if to_generate :
     if len(interv) != 3 :
@@ -259,8 +339,31 @@ def generate_gap_from_range(n_var, interv,save=False,to_generate=True,model=0,pa
     if not params.has_key(n_var) :
       print "------------ ERROR : Parameter " + n_var + " does not exist"
       return 1
-    validFile = os.path.join(os.getcwd(),"validationArray.csv")
-    launching_exec_by_intervalle(n_var,interv,validFile,model=model)
+    launching_exec_by_intervalle(n_var,interv,validFile,model=model,with_antag=with_antag)
+  # getting the FR gaps in validationArray file
+  vals = np.arange(*interv)
+  results = io.read_validationArray_values(pathToFile=pathToFile,model=model,with_antag=with_antag)
+  removing.append(n_var)
+  print "Plot array simu generation for the model ",str(model)
+  legend = get_params(paramsFromFile=paramFilePath,remove=removing)
+  # plotting with plot_tools file
+  filename = None
+  if save :
+      filename = "plots/" + str(datetime.now()) + "gapPlot_"+n_var+"_model"+str(model)+".png"
+  pltT.plot_gap_from_range(vals, n_var, interv, results, model, filename=filename,param=legend)
+
+
+# completely TODO
+def generate_gap_from_range_global(n_var,save=False,model=0,paramFilePath=None,pathToFile=os.getcwd(),removing=[]) :
+  global NUCLEI
+  validFile = os.path.join(pathToFile,"validationArray.csv")
+  print "Simulating for " + n_var
+  print "****************Simulation with Model %d******************" % model
+  if not params.has_key(n_var) :
+    print "------------ ERROR : Parameter " + n_var + " does not exist"
+    return 1
+  pltT.get_data
+  launching_exec_by_intervalle(n_var,interv,validFile,model=model)
   # getting the FR gaps in validationArray file
   vals = np.arange(*interv)
   results = io.read_validationArray_values(pathToFile=pathToFile,model=model)
@@ -315,8 +418,8 @@ for md in range(0,15) :
 '''
 
 #generate_table(2)
-#generate_margin_plot(glob=False,antag='all',model=14,path="/home/daphnehb/OIST/sBCBG3/",limit=100,score=3)
-#generate_margin_plot(glob=True,antag='none',path="/home/daphnehb/OIST/SangoTests/model5/2017_4_13/",limit=-1,score=0)
+#generate_margin_plot(glob=False,antag='none',path="/home/daphnehb/OIST/sBCBG3/",limit=100,score=0)
+#generate_margin_plot(glob=True,antag='all',path="/home/daphnehb/OIST/SangoTests/model5/2017_4_13/",limit=5,score=0)
 #generate_param_score_analyze(['G','Ie'], ['MSN','FSI','GPe','GPi','STN'],score=0, save=False,separated=True,path="/home/daphnehb/OIST/SangoTests/model1/2017_4_21")
 #generate_param_analyze("GMSN","GFSI",param3="GSTN", score=11,save=False,path="/home/daphnehb/OIST/SangoTests/model1/2017_4_21",model=1)
 #generate_fr_by_param('GPe','Ie', (5.,13.,1),with_antag=True)
@@ -348,6 +451,13 @@ for g in np.arange(4.,6.,0.1) :
   print "GGGGGGGGGG = ",g
   generate_models_ranges_tab(parametrization=params, to_generate=True,with_antag=True,save=True)
 '''
-#generate_gap_from_range("GMSN",(4.,7.,0.1),to_generate=False,model=0,save=True,removing=[])
+#params['GMSN'] = 4.8
+#params['GFSI'] = 1.2
+#params['GSTN'] = 1.33
+#params['GGPe'] = 1.0
+#generate_gap_from_range_local("IeGPe",(6.,7.,1.),to_generate=True,model=14,save=False,removing=[],with_antag=True)
+#generate_models_ranges_tab(parametrization=params, to_generate=False,with_antag=True,save=False)
+#generate_best_score_comp(figAxes=None,path="/home/daphnehb/OIST/SangoTests/model5/2017_4_13/", score=0, model=5, separated=True, save=False)
 
-generate_best_score_comp(figAxes=None,path="/home/daphnehb/OIST/SangoTests/model5/2017_4_13/", score=0, model=5, separated=True, save=False)
+for items in compute_inDegree(14).items() :
+  print items

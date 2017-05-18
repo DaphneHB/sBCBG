@@ -112,10 +112,15 @@ def get_param_from_file(paramFilePath, with_inDegree=False) :
   # TODO also get inDegree
   return legend
 
-def read_validationArray_values (pathToFile=os.getcwd(),model=0) :
+'''
+Retrieve a dictionary where every key will correspond to a slope to which we associate its gaps
+'''
+def read_validationArray_values (pathToFile=os.getcwd(),model=0,with_antag=False) :
   global NUCLEI
-  # pattern to get the gap
-  gapPattern = re.compile("([+|-]?\d+[\.\d*]*)")
+  if with_antag :
+    limit = 14
+  else :
+    limit = 5
   results = dict(zip(NUCLEI,[list() for i in range(len(NUCLEI))])) # nucleus : [gap list]
   with open(os.path.join(pathToFile,"validationArray.csv")) as varFile :
     allVardata = varFile.readlines()
@@ -124,13 +129,20 @@ def read_validationArray_values (pathToFile=os.getcwd(),model=0) :
     print "--------- ERROR : No simulation matching this model"
     exit()
   for line in allVardata :# Retrieving the FR of each nucleus N
-    line = line.strip().split(",")
-    for ind,nucl in enumerate(NUCLEI) :
-      variations = line[1:-1][ind].strip().split("=")
+    line = line.strip().split(",")[1:-1]
+    if len(line) != limit :
+      continue
+    for elt in line :
+#    for ind,nucl in enumerate(NUCLEI) :
+      variations = elt.strip().split("=")
+      nucl = variations[0]
+      if not results.has_key(nucl) :
+        results[nucl] = list()
+      # in any case, adding the gap result
       if variations[1] == "OK" :
         results[nucl].append(0)
       else :
-        gap = float(gapPattern.findall(variations[1])[0])
+        gap = float(variations[1])
         results[nucl].append(gap)
   return results
 '''

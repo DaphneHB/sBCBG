@@ -214,11 +214,13 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
   score = 0
 
   text=[]
-  frstr = antagInjectionSite + ', '
+  frstr = "#" + str(params['LG14modelID'])+ " , " + antagInjectionSite + ', '
   s = '----- RESULTS -----'
   print s
   text.append(s+'\n')
   if antagInjectionSite == 'none':
+    validationStr = "\n#" + str(params['LG14modelID']) + " , "
+    frstr += "none , "
     for N in NUCLEI:
       strTestPassed = 'NO!'
       expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*simDuration*params['nbCh']) * 1000
@@ -226,11 +228,22 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
         # if the measured rate is within acceptable values
         strTestPassed = 'OK'
         score += 1
+        validationStr += N + "=OK , "
+      else : 
+      # out of the ranges
+        if expeRate[N] > FRRNormal[N][1] :
+          difference = expeRate[N] - FRRNormal[N][1]
+          validationStr += N + "=+%.2f , " % difference
+        else :
+          difference = expeRate[N] - FRRNormal[N][0]
+          validationStr += N + "=%.2f , " % difference
       frstr += '%f , ' %(expeRate[N])
       s = '* '+N+' - Rate: '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRNormal[N][0])+' , '+str(FRRNormal[N][1])+')'
       print s
       text.append(s+'\n')
   else:
+    validationStr = ""
+    frstr += str(antag) + " , "
     for N in NUCLEI:
       expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*simDuration*params['nbCh']) * 1000
       if N == antagInjectionSite:
@@ -239,6 +252,16 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
           # if the measured rate is within acceptable values
           strTestPassed = 'OK'
           score += 1
+          validationStr += N + "_" + antag + "=OK , "
+        else : 
+        # out of the ranges
+          if expeRate[N] > FRRNormal[N][1] :
+            difference = expeRate[N] - FRRNormal[N][1]
+            validationStr += N + "_" + antag + "=+%.2f , " % difference
+          else :
+            difference = expeRate[N] - FRRNormal[N][0]
+            validationStr += N + "_" + antag + "=%.2f , " % difference
+        
         s = '* '+N+' with '+antag+' antagonist(s): '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRAnt[N][antag][0])+' , '+str(FRRAnt[N][antag][1])+')'
         print s
         text.append(s+'\n')
@@ -263,6 +286,10 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
   res.writelines(text)
   res.close()
 
+  validationFile = open("validationArray.csv",'a')
+  validationFile.write(validationStr)
+  validationFile.close()
+  
   #-------------------------
   # Displays
   #-------------------------
@@ -505,6 +532,9 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
 
 #-----------------------------------------------------------------------
 def main():
+  rasters = False
+  WITH_GDF = True
+  
   if len(sys.argv) >= 2:
     print "Command Line Parameters"
     paramKeys = ['LG14modelID',
@@ -593,6 +623,12 @@ def main():
   res = open('score.txt','w')
   res.writelines(str(score[0])+'\n')
   res.close()
+  
+  # Combining in one and removing the numerous number of GDF files
+  if WITH_GDF :
+    os.system("sh ./gdf_concat.sh")
+  else : # removing every generated gdf file
+    os.system("rm -f log/*.gdf")
 
 #---------------------------
 if __name__ == '__main__':

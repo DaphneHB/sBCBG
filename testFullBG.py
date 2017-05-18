@@ -233,8 +233,8 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
           difference = expeRate[N] - FRRNormal[N][1]
           validationStr += N + "=+%.2f , " % difference
         else :
-          difference = FRRNormal[N][0] - expeRate[N]
-          validationStr += N + "=-%.2f , " % difference
+          difference = expeRate[N] - FRRNormal[N][0]
+          validationStr += N + "=%.2f , " % difference
       
       frstr += '%f , ' %(expeRate[N])
       s = '* '+N+' - Rate: '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRNormal[N][0])+' , '+str(FRRNormal[N][1])+')'
@@ -258,8 +258,8 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
             difference = expeRate[N] - FRRNormal[N][1]
             validationStr += N + "_" + antag + "=+%.2f , " % difference
           else :
-            difference = FRRNormal[N][0] - expeRate[N]
-            validationStr += N + "_" + antag + "=-%.2f , " % difference
+            difference = expeRate[N] - FRRNormal[N][0]
+            validationStr += N + "_" + antag + "=%.2f , " % difference
         
         s = '* '+N+' with '+antag+' antagonist(s): '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRAnt[N][antag][0])+' , '+str(FRRAnt[N][antag][1])+')'
         print s
@@ -306,6 +306,8 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
 #-----------------------------------------------------------------------
 def main():
   rasters = False
+  WITH_GDF = True  
+  
   if len(sys.argv) >= 2:
     print "Command Line Parameters"
     paramKeys = ['LG14modelID',
@@ -391,6 +393,12 @@ def main():
   res = open('score.txt','w')
   res.writelines(str(score[0])+'\n')
   res.close()
+  
+  # Combining in one and removing the numerous number of GDF files
+  if WITH_GDF :
+    os.system("sh ./gdf_concat.sh")
+  else : # removing every generated gdf file
+    os.system("rm -f log/*.gdf")
 
 #---------------------------
 if __name__ == '__main__':

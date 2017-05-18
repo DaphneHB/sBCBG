@@ -227,4 +227,3 @@ def recParamExplo(pdict):
     i+= 1
 
 recParamExplo(testedParametersIntervals)
-
