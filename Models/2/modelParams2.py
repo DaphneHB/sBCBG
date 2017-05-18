@@ -21,17 +21,17 @@ params = {'LG14modelID':2,
           'GGPi':     1.,
           'IeGPe':   13.,
           'IeGPi':   11.,
-          'inDegCSNMSN': 100.,
+          'inDegCSNMSN': 93.,
           'inDegPTNMSN':   1.,
           'inDegCMPfMSN':  1.,
           'inDegFSIMSN':  30., # 30 : according to Humphries et al. 2010, 30-150 FSIs->MSN
           'inDegMSNMSN':  70., # 70 = 210/3 : according to Koos et al. 2004, cited by Humphries et al., 2010, on avg 3 synpase per MSN-MSN connection
-          'inDegSTNMSN':   0.0019,
-          'inDegGPeMSN':   0.009,
-          'inDegCSNFSI':  50.,
+          'inDegSTNMSN':   0.024,
+          'inDegGPeMSN':   0.0714,
+          'inDegCSNFSI':  99.,
           'inDegPTNFSI':   1.,
           'inDegSTNFSI':   1.,
-          'inDegGPeFSI':  15.,
+          'inDegGPeFSI':  34.,
           'inDegCMPfFSI':  9.,
           'inDegFSIFSI':  15., # 15 : according to Humphries et al., 2010, 13-63 FSIs->FSI
           'inDegPTNSTN':  25.,
@@ -46,4 +46,3 @@ params = {'LG14modelID':2,
           'inDegGPeGPi':  23.,
           'inDegCMPfGPi':  9.,
           }
-
