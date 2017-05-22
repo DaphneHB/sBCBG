@@ -9,6 +9,8 @@ import matplotlib.patches as patches
 import matplotlib.lines as mlines
 import matplotlib.ticker as ticker
 
+from mpl_toolkits.axes_grid.inset_locator import inset_axes
+from matplotlib.patches import Rectangle
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.table import Table
 import scipy.interpolate as sp
@@ -603,7 +605,7 @@ def plot_gap_from_range(vals, n_var, interv, nucleus_gap, model, param=None, fil
     labels.append(ax.plot(vals,nucleus_gap[nucl],'-^',c=color,label=color))
   ax.set_xticks(np.arange(*interv),minor=True)
   ax.set_xlabel(n_var + " values")
-  upper_margin = abs(higher_gap - abs(lower_gap)) * 1.5
+  upper_margin = abs(higher_gap - abs(lower_gap)) * 2
   ax.set_yticks(np.arange(lower_gap,higher_gap+upper_margin,1),minor=True)
   ax.set_ylabel("Firing Rates Gaps")
   ax.legend(nucleus_gap.keys(),title="Nuclei",loc='upper left',bbox_to_anchor=(0.,1.),ncol=3,fontsize='x-small').draggable()
@@ -657,6 +659,116 @@ def plot_score_by_value(parameter, pdata, simu_color, model=None, axis=None,file
   if not filename is None and axis is None :
     fig.savefig(filename)
   return simu_color
+  
+'''
+Generate the plot with every piechart
+Arguments :
+  - xtab, the list of x values
+  - ytab, the list of y values
+  - the data, a dict {value tuple : chan percentage tuple} where value tuple is the x,y coordinates
+'''
+def plot_multichan_pieChart(xtab, ytab, values_dict) :
+  nbX = float(len(xtab))
+  nbY = float(len(ytab))
+  cols=["yellow","red"]
+  margin = 0.1
+  fig = plt.figure(figsize=(nbX, nbY))
+  ax1 = fig.add_axes([margin, margin, 0.8,0.8])
+  #fig = plt.figure(figsize=(9, 4),facecolor='white')
+  #ax = fig.add_subplot(111)
+  # the main axes is subplot(111) by default  
+  ax1.set_xlim(min(xtab),max(xtab))
+  plt.xlabel('Channel 1')
+  plt.ylabel('Channel 2')
+  plt.title('2-channels action selection competition')
+  plt.gca().set_aspect('equal', adjustable='box')
+  plt.grid()
+  #legend
+  p1 = Rectangle((0, 0), 1, 1, fc=cols[0])
+  p2 = Rectangle((0, 0), 1, 1, fc=cols[1])
+  plt.legend([p1,p2], ["Channel 1", "Channel 2"],bbox_to_anchor=(1.1, 1.05),fontsize='x-small')
+  print "DICT = ",values_dict
+  size = plt.gcf().get_size_inches()*fig.dpi # size in pixels
+  print size
+  nb = 0
+  for x in xtab :
+    for y in ytab :
+      # aranging x, y for float equality comparison
+      x = round(x,1)
+      y = round(y,1)
+      nb += 1
+      if not values_dict.has_key((x,y)):
+        ax2 = fig.add_subplot(nbX,nbY,nb)
+        ax2.axis("off")  
+        plot_piechart(ax2,(0,100),colors=cols)  
+        continue
+      print "ok on le fait",(x,y)
+      value_tuple = values_dict[(x,y)]
+      print "\t",value_tuple
+      # this is an inset axes over the main axes
+      print "Nbs :::::::::::: ",(nbX,nbY,nb)
+      ax2 = fig.add_subplot(nbX,nbY,nb)
+      ax2.axis("off")  
+      plot_piechart(ax2,value_tuple,colors=cols)
+#  exit()
+  plt.show()
+
+
+'''
+Generate the plot for a single piechart (for a single value tuple)
+Parameters are :
+  - the axes for this piechart (to insert it after with the others)
+  - the percentages for everychannel (everytime in the same order)
+  - the colors for each channel (everytime in the same order)
+Return the axes of this plot (unused)
+'''
+def plot_piechart(axes,percentages,colors) :
+  sizes = list(percentages) #[15, 30, 45, 10]
+  explode = [0] * len(percentages)  # only "explode" the 2nd slice (i.e. 'Hogs')
+  axes.pie(sizes, explode=explode,  pctdistance=1,
+          shadow=False, startangle=90,colors=colors) #, autopct='%2d%%')
+  axes.set_aspect('equal', adjustable='box')
+  return axes
+
+plot_multichan_pieChart(np.arange(0,1.1,0.1),np.arange(0,1.1,0.1),{(0.1,0.7):(10,90),(0.,0):(50,50),(0.6,0.5):(70,30)})
+
+
+def to_remove(locat) :
+  # create some data to use for the plot
+  dt = 0.001
+  t = np.arange(0.0, 10.0, dt)
+  r = np.exp(-t[:1000]/0.05)               # impulse response
+  x = np.random.randn(len(t))
+  s = np.convolve(x, r)[:len(x)]*dt  # colored noise
+  
+  fig = plt.figure(figsize=(6,6),facecolor='white')
+  ax = fig.add_subplot(111)
+  # the main axes is subplot(111) by default
+  plt.axis([0, 1, 0,1])
+  plt.grid()
+  plt.xlabel('time (s)')
+  plt.ylabel('current (nA)')
+  plt.title('Subplot 1: \n Gaussian colored noise')
+  plt.gca().set_aspect('equal', adjustable='box')
+  # this is an inset axes over the main axes
+  w = 1 # width=height to have a small square
+  inset = inset_axes(ax, 
+                    width=w,
+                    height=w,
+                    loc=locat,
+                    bbox_to_anchor=(0.5, 1.), 
+                    bbox_transform=ax.figure.transFigure)
+  #plt.hist(s, 400, normed=1)
+  plot_piechart(ax,(60,40),colors=["yellow","red"])
+  #plt.title('Probability')
+  plt.xticks([])
+  plt.yticks([])
+  
+  
+  plt.tight_layout()
+  plt.show()
+  
+
 ### Tests
 '''
 table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.65986013986014, 31696.91076923077), 'GPe->GPi': (1.4744055944055943, 23.59048951048951), 'GPe->MSN': (0.0015184513006654568, 0.14121597096188748), 'GPe->GPe': (0.84, 31.919999999999998), 'CMPf->GPe': (0.3426294820717131, 15.760956175298803), 'CMPf->GPi': (0.6013986013986014, 83.59440559440559), 'CMPf->FSI': (0.16165413533834586, 122.21052631578947), 'PTN->FSI': (-1, 5.0), 'CMPf->STN': (1.1168831168831168, 64.77922077922078), 'STN->MSN': (0.0004949334543254689, 0.05394774652147611), 'GPe->STN': (3.25974025974026, 61.935064935064936), 'STN->GPe': (0.2546215139442231, 74.34948207171315), 'STN->GPi': (0.38769230769230767, 63.96923076923076), 'CMPf->MSN': (0.003251663641863279, 7.244706594071385), 'FSI->FSI': (1.0, 140.0), 'CSN->MSN': (-1, 318.0), 'PTN->MSN': (-1, 5.0), 'FSI->MSN': (0.020114942528735632, 43.689655172413794), 'MSN->MSN': (1.0, 509.0), 'PTN->STN': (-1, 262.0), 'CSN->FSI': (-1, 489.0), 'GPe->FSI': (0.07548872180451129, 36.46105263157895)}
@@ -666,3 +778,7 @@ plot_inDegrees_boarders_table(table,'0')
 #plot_score_ratio("Ie","GPi",dataPath="/home/daphnehb/OIST/SangoTests/model2/copyBG")
 
 #plot_models_ranges({0: ['#0 , MSN=OK , FSI=NO[+4.8340] , STN=OK , GPe=OK , GPi=NO[+6.6000] , ']},["'GMSN':5.7", "'GFSI':1.3", "'GSTN':1.38", "'GGPe':1.3", "'IeGPe':13.", "'GGPi':1.", "'IeGPi':11."],models=[0])
+
+for loc in np.arange(1,11,1) :
+  #to_remove(loc)
+  exit()

@@ -5,7 +5,7 @@ from modelParams import *
 import nest.raster_plot
 #import time
 import sys
-
+import os
 # params possible keys:
 # - nb{MSN,FSI,STN,GPi,GPe,CSN,PTN,CMPf} : number of simulated neurons for each population
 # - Ie{GPe,GPi} : constant input current to GPe and GPi
@@ -533,7 +533,7 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
 #-----------------------------------------------------------------------
 def main():
   rasters = False
-  WITH_GDF = True
+  WITH_GDF = False
   
   if len(sys.argv) >= 2:
     print "Command Line Parameters"
@@ -590,7 +590,8 @@ def main():
   
   #execTime = time.localtime()
   #timeStr = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])+':'+str(execTime[5])
-
+  os.system("rm -rf log/*")
+  
   score = np.zeros((2))
   '''
   score += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=True)
