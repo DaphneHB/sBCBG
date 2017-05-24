@@ -663,52 +663,49 @@ def plot_score_by_value(parameter, pdata, simu_color, model=None, axis=None,file
 '''
 Generate the plot with every piechart
 Arguments :
-  - xtab, the list of x values
-  - ytab, the list of y values
+  - xtab, the list of x values (also y value : symetric, square)
   - the data, a dict {value tuple : chan percentage tuple} where value tuple is the x,y coordinates
 '''
-def plot_multichan_pieChart(xtab, ytab, values_dict) :
-  nbX = float(len(xtab))
-  nbY = float(len(ytab))
-  cols=["yellow","red"]
-  margin = 0.1
-  fig = plt.figure(figsize=(nbX, nbY))
-  ax1 = fig.add_axes([margin, margin, 0.8,0.8])
-  #fig = plt.figure(figsize=(9, 4),facecolor='white')
-  #ax = fig.add_subplot(111)
-  # the main axes is subplot(111) by default  
-  ax1.set_xlim(min(xtab),max(xtab))
+def plot_multichan_pieChart(tab, values_dict) :
+  nbVals = float(len(tab)) + 1
+  step = round(1/nbVals,1)
+  cols=["grey","yellow","red"]
+  fig_range = [0.1,0.8]
+  expe_range = [min(tab)-step,max(tab)+2*step]
+  fig = plt.figure(figsize=(nbVals*0.9, nbVals*0.9))
+  # main figure translated from 0.1 (0) to 0.8(1)
+  ax1 = fig.add_axes([fig_range[0],fig_range[0],fig_range[1],fig_range[1]])
+  rescale = lambda a : fig_range[0] + a * (fig_range[1] - fig_range[0]) + fig_range[0]*0.05   # assuming every experimental value is in between 0 and 1 + a small offset
+  # specifications of the plot
   plt.xlabel('Channel 1')
   plt.ylabel('Channel 2')
+  new_tab = np.arange(expe_range[0],expe_range[1],step)
+  plt.xticks(new_tab)
+  plt.yticks(new_tab)  
   plt.title('2-channels action selection competition')
   plt.gca().set_aspect('equal', adjustable='box')
   plt.grid()
   #legend
   p1 = Rectangle((0, 0), 1, 1, fc=cols[0])
   p2 = Rectangle((0, 0), 1, 1, fc=cols[1])
-  plt.legend([p1,p2], ["Channel 1", "Channel 2"],bbox_to_anchor=(1.1, 1.05),fontsize='x-small')
-  print "DICT = ",values_dict
-  size = plt.gcf().get_size_inches()*fig.dpi # size in pixels
-  print size
-  nb = 0
-  for x in xtab :
-    for y in ytab :
+  p3 = Rectangle((0, 0), 1, 1, fc=cols[2])
+  plt.legend([p1,p2,p3], ["No selection","Channel 1", "Channel 2"],bbox_to_anchor=(1.1, 1.05),fontsize='x-small')
+  for x in tab :
+    for y in tab :
       # aranging x, y for float equality comparison
       x = round(x,1)
       y = round(y,1)
-      nb += 1
       if not values_dict.has_key((x,y)):
-        ax2 = fig.add_subplot(nbX,nbY,nb)
-        ax2.axis("off")  
-        plot_piechart(ax2,(0,100),colors=cols)  
         continue
-      print "ok on le fait",(x,y)
       value_tuple = values_dict[(x,y)]
-      print "\t",value_tuple
-      # this is an inset axes over the main axes
-      print "Nbs :::::::::::: ",(nbX,nbY,nb)
-      ax2 = fig.add_subplot(nbX,nbY,nb)
-      ax2.axis("off")  
+      # rescaling x and y to have them at the coordinates' intersection
+      x = rescale(x)
+      x = x + (1 - x) * 0.03
+      y = rescale(y)
+      y = y + (1 - y) * 0.03
+      # inserting the piechart
+      ax2 = fig.add_axes([x,y,step*0.7,step*0.7]) #fig.add_subplot(nbX,nbY,nb)
+      ax2.axis("off")
       plot_piechart(ax2,value_tuple,colors=cols)
 #  exit()
   plt.show()
@@ -723,51 +720,15 @@ Parameters are :
 Return the axes of this plot (unused)
 '''
 def plot_piechart(axes,percentages,colors) :
-  sizes = list(percentages) #[15, 30, 45, 10]
-  explode = [0] * len(percentages)  # only "explode" the 2nd slice (i.e. 'Hogs')
-  axes.pie(sizes, explode=explode,  pctdistance=1,
+  sizes = list(percentages)
+  explode = [0] * len(percentages) 
+  axes.pie(sizes, explode=explode,
           shadow=False, startangle=90,colors=colors) #, autopct='%2d%%')
   axes.set_aspect('equal', adjustable='box')
   return axes
 
-plot_multichan_pieChart(np.arange(0,1.1,0.1),np.arange(0,1.1,0.1),{(0.1,0.7):(10,90),(0.,0):(50,50),(0.6,0.5):(70,30)})
+#plot_multichan_pieChart(np.arange(0,1.1,0.1),{(0.1,0.7):(0,10,90),(0.,0):(0,50,50),(0.6,0.5):(10,60,30)})
 
-
-def to_remove(locat) :
-  # create some data to use for the plot
-  dt = 0.001
-  t = np.arange(0.0, 10.0, dt)
-  r = np.exp(-t[:1000]/0.05)               # impulse response
-  x = np.random.randn(len(t))
-  s = np.convolve(x, r)[:len(x)]*dt  # colored noise
-  
-  fig = plt.figure(figsize=(6,6),facecolor='white')
-  ax = fig.add_subplot(111)
-  # the main axes is subplot(111) by default
-  plt.axis([0, 1, 0,1])
-  plt.grid()
-  plt.xlabel('time (s)')
-  plt.ylabel('current (nA)')
-  plt.title('Subplot 1: \n Gaussian colored noise')
-  plt.gca().set_aspect('equal', adjustable='box')
-  # this is an inset axes over the main axes
-  w = 1 # width=height to have a small square
-  inset = inset_axes(ax, 
-                    width=w,
-                    height=w,
-                    loc=locat,
-                    bbox_to_anchor=(0.5, 1.), 
-                    bbox_transform=ax.figure.transFigure)
-  #plt.hist(s, 400, normed=1)
-  plot_piechart(ax,(60,40),colors=["yellow","red"])
-  #plt.title('Probability')
-  plt.xticks([])
-  plt.yticks([])
-  
-  
-  plt.tight_layout()
-  plt.show()
-  
 
 ### Tests
 '''
@@ -779,6 +740,3 @@ plot_inDegrees_boarders_table(table,'0')
 
 #plot_models_ranges({0: ['#0 , MSN=OK , FSI=NO[+4.8340] , STN=OK , GPe=OK , GPi=NO[+6.6000] , ']},["'GMSN':5.7", "'GFSI':1.3", "'GSTN':1.38", "'GGPe':1.3", "'IeGPe':13.", "'GGPi':1.", "'IeGPi':11."],models=[0])
 
-for loc in np.arange(1,11,1) :
-  #to_remove(loc)
-  exit()

@@ -302,3 +302,18 @@ Get the gaps in validation
 def get_data_from_simu() :
   pass
 
+'''
+For these values :
+{(x.y tuple) : [list of 0, 1 or 2] ; ....}
+Change them to this :
+{(x.y tuple) : (nochan %, chan1 %, chan2 %) ; ....}
+'''
+def dualchanFileToPercentages(chan_output_dict) :
+  chans_percentages = {}
+  for key,vals in chan_output_dict.items() :
+    totalNB = len(vals)
+    noChanperc = round(100. * vals.count("0") / totalNB)
+    chan1perc = round(100. * vals.count("1") / totalNB)
+    chan2perc = round(100. * vals.count("2") / totalNB)
+    chans_percentages[key] = (noChanperc,chan1perc,chan2perc)
+  return chans_percentages

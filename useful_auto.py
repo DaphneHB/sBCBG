@@ -459,5 +459,11 @@ for g in np.arange(4.,6.,0.1) :
 #generate_models_ranges_tab(parametrization=params, to_generate=False,with_antag=True,save=False)
 #generate_best_score_comp(figAxes=None,path="/home/daphnehb/OIST/SangoTests/model5/2017_4_13/", score=0, model=5, separated=True, save=False)
 
-for items in compute_inDegree(14).items() :
-  print items
+#for items in compute_inDegree(14).items() :
+#  print items
+
+di = io.read_2chan_file(pathToFile="/home/daphnehb/OIST/sBCBG3/data/tests",model=1,antag="none")
+print di
+per = pltT.dualchanFileToPercentages(di)
+print per
+pltT.plot_multichan_pieChart(np.arange(0,1.1,0.1),per)
