@@ -324,7 +324,7 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
       print "Missing parameter:",nepa
       exit()
 
-  nbRecord=2 # number of channels whose activity will be recorded
+  nbRecord = 2 # number of channels whose activity will be recorded
   if params['nbCh']<2:
     print 'need at least 2 channels to perform Gurney test'
     exit()
@@ -342,8 +342,8 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
   #-------------------------  
   gCSN = CSNFR[1]-CSNFR[0]
   gPTN = PTNFR[1]-PTNFR[0]
-  activityLevels = np.array([[0,0.4,0.4,0.6,0.4], [0.,0.,0.6,0.6,0.6]]) 
-
+  activityLevels = np.array([[0,0.4,0.4,0.6,0.4], [0.,0.,0.6,0.6,0.6]])  
+  
   CSNrate= gCSN * activityLevels + np.ones((5)) * CSNFR[0]
   PTNrate= gPTN * activityLevels + np.ones((5)) * PTNFR[0]
 
@@ -389,7 +389,7 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
         ActPop['PTN'][i] = tuple(rnd.choice(a=np.array(Pop['PTN'][i]),size=int(nbSim['PTN']*PActivePTN),replace=False))
 
   #-------------------------
-  # log-related variales
+  # log-related variables
   #-------------------------
   score = 0
   expeRate={}
@@ -500,7 +500,11 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
 
     print '------ Result ------'
     print expeRate['GPi'][0,timeStep],'Hz',expeRate['GPi'][1,timeStep],'Hz',strTestPassed
-
+    print "%%%%%%%555 un truc que je teste :"
+    print "channel1 : ",activityLevels[0][timeStep]
+    print "channel2 : ",activityLevels[1][timeStep]
+    print "gagnant = ",
+    print "%%%%%%%%%%%%% fin test"
     # write measured firing rates in csv file
     frstr+='\n'
     firingRatesFile.writelines(frstr)
@@ -529,6 +533,272 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
   firingRatesFile.close()
 
   return score,5
+  
+#-----------------------------------------------------------------------
+# PActiveCNS/PTN : proportion of "active" neurons in the CSN/PTN populations (in [0.,1.])
+#
+#-----------------------------------------------------------------------
+def checkGurneyTestGeneric(trials_dico,showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
+  nest.ResetKernel()
+  dataPath='log/'
+  nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
+  initNeurons()
+
+  offsetDuration = 200.
+  simDuration = 800. # ms
+  loadLG14params(params['LG14modelID'])
+
+  # We check that all the necessary parameters have been defined. They should be in the modelParams.py file.
+  # If one of them misses, we exit the program.
+  necessaryParams=['nbCh','nbMSN','nbFSI','nbSTN','nbGPe','nbGPi','nbCSN','nbPTN','nbCMPf','IeGPe','IeGPi','GMSN','GFSI','GSTN','GGPe','GGPi','inDegCSNMSN','inDegPTNMSN','inDegCMPfMSN','inDegMSNMSN','inDegFSIMSN','inDegSTNMSN','inDegGPeMSN','inDegCSNFSI','inDegPTNFSI','inDegSTNFSI','inDegGPeFSI','inDegCMPfFSI','inDegFSIFSI','inDegPTNSTN','inDegCMPfSTN','inDegGPeSTN','inDegCMPfGPe','inDegSTNGPe','inDegMSNGPe','inDegGPeGPe','inDegMSNGPi','inDegSTNGPi','inDegGPeGPi','inDegCMPfGPi',]
+  for nepa in necessaryParams:
+    if nepa not in params:
+      print "Missing parameter:",nepa
+      exit()
+
+  nbRecord = 2 # number of channels whose activity will be recorded
+  if params['nbCh']<2:
+    print 'need at least 2 channels to perform Gurney test'
+    exit()
+  elif params['nbCh']>2:
+    nbRecord = 3 # if we have more than 2 channels, we will also record one of the neutral channels
+
+  #-------------------------
+  # creation and connection of the neural populations
+  #-------------------------
+  createBG_MC()
+  connectBG_MC(antagInjectionSite,antag)
+
+  #-------------------------
+  # prepare the firing rates of the inputs for the 5 steps of the experiment
+  #-------------------------  
+  gCSN = CSNFR[1]-CSNFR[0]
+  gPTN = PTNFR[1]-PTNFR[0]
+  activityLevels1 = list()
+  activityLevels2 = list()
+  xytab = map(lambda x : round(x,1),list(np.arange(0,1.,0.1)))
+  for x in xytab :
+    activityLevels1 += [x] * 10
+    activityLevels2 += values
+  activityLevels = np.array([activityLevels1,activityLevels2]) # for both channels
+  nbTimes = len(activityLevels[0])
+  
+  CSNrate= gCSN * activityLevels + np.ones((nbTimes)) * CSNFR[0]
+  PTNrate= gPTN * activityLevels + np.ones((nbTimes)) * PTNFR[0]
+  
+  #-------------------------
+  # and prepare the lists of neurons that will be affected by these activity changes
+  #-------------------------
+  ActPop = {'CSN':[(),()],'PTN':[(),()]}
+  if 'Fake' in globals():
+    if 'CSN' in Fake:
+      if PActiveCSN==1.:
+       ActPop['CSN']=Fake['CSN']
+      else:
+        for i in range(2):
+          ActPop['CSN'][i] = tuple(rnd.choice(a=np.array(Fake['CSN'][i]),size=int(nbSim['CSN']*PActiveCSN),replace=False))
+    else:
+      if PActiveCSN==1.:
+       ActPop['CSN']=Pop['CSN']
+      else:
+        for i in range(2):
+          ActPop['CSN'][i] = tuple(rnd.choice(a=np.array(Pop['CSN'][i]),size=int(nbSim['CSN']*PActiveCSN),replace=False))
+    if 'PTN' in Fake:
+      if PActivePTN==1.:
+        ActPop['PTN']=Fake['PTN']
+      else:
+        for i in range(2):
+          ActPop['PTN'][i] = tuple(rnd.choice(a=np.array(Fake['PTN'][i]),size=int(nbSim['PTN']*PActivePTN),replace=False))
+    else:
+      if PActivePTN==1.:
+        ActPop['PTN']=Pop['PTN']
+      else:
+        for i in range(2):
+          ActPop['PTN'][i] = tuple(rnd.choice(a=np.array(Pop['PTN'][i]),size=int(nbSim['PTN']*PActivePTN),replace=False))
+  else:
+    if PActiveCSN==1.:
+     ActPop['CSN']=Pop['CSN']
+    else:
+      for i in range(2):
+        ActPop['CSN'][i] = tuple(rnd.choice(a=np.array(Pop['CSN'][i]),size=int(nbSim['CSN']*PActiveCSN),replace=False))
+    if PActivePTN==1.:
+      ActPop['PTN']=Pop['PTN']
+    else:
+      for i in range(2):
+        ActPop['PTN'][i] = tuple(rnd.choice(a=np.array(Pop['PTN'][i]),size=int(nbSim['PTN']*PActivePTN),replace=False))
+
+  #-------------------------
+  # log-related variables
+  #-------------------------
+  score = 0
+  expeRate={}
+  for N in NUCLEI:
+    expeRate[N]=-1. * np.ones((nbRecord,nbTimes)) # for the 100 tests
+
+  inspector = {}
+  for N in NUCLEI:
+    inspector[N] = nest.Create("spike_detector", params={"withgid": True, "withtime": True, "label": N, "to_file": False})
+    for i in range(nbRecord):
+      nest.Connect(Pop[N][i],inspector[N])
+
+  #-------------------------
+  # write header in firingRate summary file
+  #-------------------------
+  frstr = 'step , '
+  for i in range(nbRecord):
+    for N in NUCLEI:
+      frstr += N+' ('+str(i)+') , '
+  frstr+='\n'
+  firingRatesFile=open(dataPath+'firingRates.csv','w')
+  firingRatesFile.writelines(frstr)
+
+  #----------------------------------
+  # Loop over all the steps of the test
+  #----------------------------------
+  for timeStep in range(nbTimes):
+    print "\n\tTime step %d\n" % timeStep
+    #-------------------------
+    # measures                                                                                                                                                  
+    #-------------------------
+    spkDetect=[{},{},{}] # list of spike detector dictionaries used to record the experiment in the first 3 channels
+
+    antagStr = ''
+    if antagInjectionSite != 'none':
+      antagStr = antagInjectionSite+'_'+antag+'_'
+
+    for i in range(nbRecord):
+      for N in NUCLEI:
+        spkDetect[i][N] = nest.Create("spike_detector", params={"withgid": True, "withtime": True, "label": str(timeStep)+'_'+antagStr+N, "to_file": True, 'start':offsetDuration + timeStep*(offsetDuration+simDuration),'stop':(timeStep+1)*(offsetDuration+simDuration)})
+        nest.Connect(Pop[N][i], spkDetect[i][N])
+
+    frstr = str(timeStep) + ', '
+
+    #-------------------------
+    # Simulation
+    #-------------------------
+    print '====== Step',timeStep,'======'
+    print 'Channel 0:',CSNrate[0,timeStep],PTNrate[0,timeStep]
+    print 'Channel 1:',CSNrate[1,timeStep],PTNrate[1,timeStep]
+
+    '''
+    if 'Fake' in globals():
+      if 'CSN' in Fake:
+        nest.SetStatus(Fake['CSN'][0],{'rate':CSNrate[0,timeStep]})
+        nest.SetStatus(Fake['CSN'][1],{'rate':CSNrate[1,timeStep]})
+      else:
+        nest.SetStatus(Pop['CSN'][0],{'rate':CSNrate[0,timeStep]})
+        nest.SetStatus(Pop['CSN'][1],{'rate':CSNrate[1,timeStep]})
+      if 'PTN' in Fake:
+        nest.SetStatus(Fake['PTN'][0],{'rate':PTNrate[0,timeStep]})
+        nest.SetStatus(Fake['PTN'][1],{'rate':PTNrate[1,timeStep]})
+      else:
+        nest.SetStatus(Pop['PTN'][0],{'rate':PTNrate[0,timeStep]})
+        nest.SetStatus(Pop['PTN'][1],{'rate':PTNrate[1,timeStep]})
+    else:
+      nest.SetStatus(Pop['CSN'][0],{'rate':CSNrate[0,timeStep]})
+      nest.SetStatus(Pop['CSN'][1],{'rate':CSNrate[1,timeStep]})
+      nest.SetStatus(Pop['PTN'][0],{'rate':PTNrate[0,timeStep]})
+      nest.SetStatus(Pop['PTN'][1],{'rate':PTNrate[1,timeStep]})
+    '''
+
+    nest.SetStatus(ActPop['CSN'][0],{'rate':CSNrate[0,timeStep]})
+    nest.SetStatus(ActPop['CSN'][1],{'rate':CSNrate[1,timeStep]})
+    nest.SetStatus(ActPop['PTN'][0],{'rate':PTNrate[0,timeStep]})
+    nest.SetStatus(ActPop['PTN'][1],{'rate':PTNrate[1,timeStep]})
+
+    nest.Simulate(simDuration+offsetDuration)
+
+    for i in range(nbRecord):
+      print '------ Channel',i,'-------'
+      for N in NUCLEI:
+        #strTestPassed = 'NO!'
+        print expeRate[N]
+        print expeRate[N][i]
+        print expeRate[N][i][timeStep]
+        print expeRate[N][i,timeStep]
+        
+        expeRate[N][i,timeStep] = nest.GetStatus(spkDetect[i][N], 'n_events')[0] / float(nbSim[N]*simDuration) * 1000
+        print 't('+str(timeStep)+')',N,':',expeRate[N][i,timeStep],'Hz'
+        frstr += '%f , ' %(expeRate[N][i,timeStep])
+
+    strTestPassed = 'YES!'
+    choosenChannel = "0"
+    # for the no input activity in both channels
+    if activityLevels[0][timeStep]==activityLevels[1][timeStep]==0 :
+      for i in range(params['nbCh']):
+        if expeRate['GPi'][0,timeStep]<FRRNormal['GPi'][0]:
+          strTestPassed = 'NO!'
+          choosenChannel = "3"
+        else :
+          choosenChannel = "0"
+      meanRestGPi = expeRate['GPi'][:,timeStep].mean()
+    # for equal & non zero input activity
+    elif activityLevels[0][timeStep] == activityLevels[1][timeStep] :
+      if expeRate['GPi'][0,timeStep] > meanRestGPi*0.9 or expeRate['GPi'][1,timeStep] > meanRestGPi*0.9 :
+        strTestPassed = 'NO!'
+    # for channel 1 input activity higher then channel 2 input activity
+    elif activityLevels[0][timeStep] > activityLevels[1][timeStep] :
+      pass
+    # for channel 1 input activity lower then channel 2 input activity      
+    elif activityLevels[0][timeStep] < activityLevels[1][timeStep] :
+      pass
+    # TODO to remove
+    if timeStep == 0:
+      for i in range(params['nbCh']):
+        if expeRate['GPi'][0,timeStep]<FRRNormal['GPi'][0]:
+          strTestPassed = 'NO!'
+      meanRestGPi = expeRate['GPi'][:,timeStep].mean()
+    elif timeStep == 1:
+      if expeRate['GPi'][0,timeStep] > meanRestGPi*0.9:
+        strTestPassed = 'NO!'
+    elif timeStep == 2:
+      if expeRate['GPi'][1,timeStep] > meanRestGPi*0.9 or expeRate['GPi'][0,timeStep] < expeRate['GPi'][1,timeStep]:
+        strTestPassed = 'NO!'
+    elif timeStep == 3:
+      if expeRate['GPi'][0,timeStep] > meanRestGPi*0.9 or expeRate['GPi'][1,timeStep] > meanRestGPi*0.9 :
+        strTestPassed = 'NO!'
+    elif timeStep == 4:
+      if expeRate['GPi'][1,timeStep] > meanRestGPi*0.9 or expeRate['GPi'][0,timeStep] < expeRate['GPi'][1,timeStep]:
+        strTestPassed = 'NO!'
+
+    if strTestPassed == 'YES!':
+      score +=1
+
+    print '------ Result ------'
+    print expeRate['GPi'][0,timeStep],'Hz',expeRate['GPi'][1,timeStep],'Hz',strTestPassed
+    print "%%%%%%%555 un truc que je teste :"
+    print "channel1 : ",activityLevels[0][timeStep]
+    print "channel2 : ",activityLevels[1][timeStep]
+    print "gagnant = ",
+    print "%%%%%%%%%%%%% fin test"
+    # write measured firing rates in csv file
+    frstr+='\n'
+    firingRatesFile.writelines(frstr)
+
+    #-------------------------
+    # Displays
+    #-------------------------
+    '''
+    if showRasters and interactive:
+      for i in range(nbRecord):
+        displayStr = ' Channel '+str(i)
+        displayStr+=' ('+antagStr[:-1]+')' if (antagInjectionSite != 'none') else ''
+        #for N in NUCLEI:
+        for N in ['MSN','STN']:
+          #nest.raster_plot.from_device(spkDetect[i][N],hist=True,title=N+displayStr)
+          nest.raster_plot.from_device(spkDetect[i][N],hist=False,title=N+displayStr)
+
+      nest.raster_plot.show()
+    '''
+
+  if showRasters and interactive:
+    for N in NUCLEI:
+      nest.raster_plot.from_device(inspector[N],hist=True,title=N)
+    nest.raster_plot.show()
+
+  firingRatesFile.close()
+
+  return xytab,trials_dico
 
 #-----------------------------------------------------------------------
 def main():

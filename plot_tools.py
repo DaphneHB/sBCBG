@@ -669,7 +669,7 @@ Arguments :
 def plot_multichan_pieChart(tab, values_dict) :
   nbVals = float(len(tab)) + 1
   step = round(1/nbVals,1)
-  cols=["grey","yellow","red"]
+  cols=["grey","blue","green","red"]
   fig_range = [0.1,0.8]
   expe_range = [min(tab)-step,max(tab)+2*step]
   fig = plt.figure(figsize=(nbVals*0.9, nbVals*0.9))
@@ -689,22 +689,21 @@ def plot_multichan_pieChart(tab, values_dict) :
   p1 = Rectangle((0, 0), 1, 1, fc=cols[0])
   p2 = Rectangle((0, 0), 1, 1, fc=cols[1])
   p3 = Rectangle((0, 0), 1, 1, fc=cols[2])
-  plt.legend([p1,p2,p3], ["No selection","Channel 1", "Channel 2"],bbox_to_anchor=(1.1, 1.05),fontsize='x-small')
+  p4 = Rectangle((0, 0), 1, 1, fc=cols[3])
+  plt.legend([p1,p2,p3,p4], ["No selection","Channel 1", "Channel 2", "Error"],bbox_to_anchor=(1.1, 1.05),fontsize='x-small')
   for x in tab :
     for y in tab :
       # aranging x, y for float equality comparison
-      x = round(x,1)
-      y = round(y,1)
       if not values_dict.has_key((x,y)):
         continue
       value_tuple = values_dict[(x,y)]
       # rescaling x and y to have them at the coordinates' intersection
-      x = rescale(x)
-      x = x + (1 - x) * 0.03
-      y = rescale(y)
-      y = y + (1 - y) * 0.03
+      xpos = rescale(x)
+      xpos = xpos + (1 - xpos) * 0.02
+      ypos = rescale(y)
+      ypos = ypos + (1 - ypos) * 0.02
       # inserting the piechart
-      ax2 = fig.add_axes([x,y,step*0.7,step*0.7]) #fig.add_subplot(nbX,nbY,nb)
+      ax2 = fig.add_axes([xpos,ypos,step*0.7,step*0.7]) #fig.add_subplot(nbX,nbY,nb)
       ax2.axis("off")
       plot_piechart(ax2,value_tuple,colors=cols)
 #  exit()

@@ -6,6 +6,7 @@ Created on Fri Mar 24 11:29:18 2017
 """
 
 from testFullBG import *
+
 import os
 import re
 import plot_tools as pltT
@@ -411,6 +412,38 @@ def generate_best_score_comp(figAxes=None,path=os.getcwd(), score=0, model=None,
   if not save :
     pltT.plt.show()
 
+'''
+Generate the multi pie chart plot for Gurney&Prescott test
+Test if the right channel is selected for the action according to the input
+Plus, write a file with the results (filename = "dualchanCompetition.csv")
+
+Arguments :
+NbTrials is the number of trials (1 trial = 100 simulations)
+pathToData is to know where to save the file
+model is model number to test
+antag is none/all/GPe_AMPA/GPe_GABAA/GPe_NMDA/GPe_AMPA+GABAA/GPi_NMDA/GPi_AMPA/GPi_GABAA/GPI_NMDA+AMPA
+'''
+def generate_GurneyTest(generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=0,antag='none') :
+  from testChannelBG import *
+  
+  trials_dico = {}
+  xytab = None
+  if generate or filename is None:
+    for trial in range(NbTrials) :
+      os.system("rm -r log/*")
+      print "############################## TRIAL no. %d ###########################" % trial
+      # launch GurneyTestsgeneric
+      xytab,this_trial = checkGurneyTestGeneric(trials_dico,showRasters=True,params=params,PActiveCSN=0.2,PActivePTN=0.2)
+      trials_dico.update(this_trial)
+    if filename is None :
+      filename = str(datetime.now()) + "dualchanCompetition.csv"
+    io.write__2chan_file(xytab,trials_dico,filename,pathToFile=pathToData,model=model,antag=antag)
+  else :
+    xytab,trials_dico = io.read_2chan_file(filename,pathToFile=pathToData,model=model,antag=antag)
+  print trials_dico
+  trials_dico = pltT.dualchanFileToPercentages(trials_dico)
+  print trials_dico
+  pltT.plot_multichan_pieChart(xytab,trials_dico)
 
 '''
 for md in range(0,15) :
@@ -462,8 +495,8 @@ for g in np.arange(4.,6.,0.1) :
 #for items in compute_inDegree(14).items() :
 #  print items
 
-di = io.read_2chan_file(pathToFile="/home/daphnehb/OIST/sBCBG3/data/tests",model=1,antag="none")
-print di
-per = pltT.dualchanFileToPercentages(di)
-print per
-pltT.plot_multichan_pieChart(np.arange(0,1.1,0.1),per)
+generate_GurneyTest(NbTrials=1)
+#generate_GurneyTest(generate=False, filename="dualchanCompetition.csv",pathToData="/home/daphnehb/OIST/sBCBG3/data/tests",model=1,antag="none")
+#per = pltT.dualchanFileToPercentages(di)
+#print per
+#pltT.plot_multichan_pieChart(np.arange(0,1.1,0.1),per)

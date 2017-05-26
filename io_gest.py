@@ -154,15 +154,19 @@ for a specific (x.y) value
 File format :
 #model_nb
 antag_type
+xvalues separated by a ;
+\n
 X ; Y ; 0, 1 or 2 (choosen channel); 0, 1 or 2; 0, 1 or 2 .... [as much as the nb of trials]
 .
 .
 .
 [100 values - 10x * 10y]
+
+Return the cordinates values (x, resp y) and the dictionnary of the selected channel for the simulations for specific inputs
 '''
-def read_2chan_file(pathToFile=os.getcwd(), model=0, antag="none") :
+def read_2chan_file(filename,pathToFile=os.getcwd(), model=0, antag="none") :
   results = {}
-  with open(os.path.join(pathToFile,"dualchanCompetition.csv")) as varFile :
+  with open(os.path.join(pathToFile,filename),"r") as varFile :
     allVardata = varFile.readlines()
   if not ("#" + str(model)) in allVardata[0] :
     print "--------- ERROR : No simulation matching this model (#"+str(model)+")"
@@ -170,19 +174,54 @@ def read_2chan_file(pathToFile=os.getcwd(), model=0, antag="none") :
   if not antag in allVardata[1] :
     print "--------- ERROR : No simulation matching this antagonist injection ("+antag+")"
     exit()
+  xytab = map(float,allVardata[2].split(";"))
   chan_output_dict = {}
   # reading and sadding the values to the dictionnary
-  for line in allVardata[2:] :
+  for line in allVardata[4:] :
     line = line.split(";")
     # retrieving the coordinates (tested values)
     x,y = map(float,line[0:2])
     # getting the choosen channels + removing the last \n
     chan_output_dict[(x,y)] = map(lambda v: v.strip(),line[2:-1])
-  return chan_output_dict
+  return xytab,chan_output_dict
   
+
+'''
+Given the results of the GurneyTest, stocked in a dico trials_dico
+Write the results with all the necessary data in filename file
+
+File format :
+#model_nb
+antag_type
+xvalues separated by a ;
+\n
+X ; Y ; 0, 1 or 2 (choosen channel); 0, 1 or 2; 0, 1 or 2 .... [as much as the nb of trials]
+.
+.
+.
+[100 values - 10x * 10y]
+
+'''
+def write_2chan_file(xytab,trials_dico,filename,pathToFile=os.getcwd(), model=0,antag='none') :
+  # retrieving the string for the xytab values
+  xytext = ";".join(map(str,xytab))
+  # first writting the model and the antag
+  textToWrite = "#%d\n%s\n%s\n\n" % (model,antag,xytext)
+  # writing every trails for each (x.y) tuple
+  for keys,values in trials_dico.items() :
+    keyTxt = str(keys[0]) + ";" + str(keys[1]) + ";"
+    valTxt = ";".join(values) # values is already a list of string ["1","2","0","3"...]
+    textToWrite += keyTxt + valTxt + "\n"
+  with open(os.path.join(pathToFile,filename),"w") as outFile :
+    outFile.write(textToWrite)
+  
+
 '''
 table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.65986013986014, 31696.91076923077), 'GPe->GPi': (1.4744055944055943, 23.59048951048951), 'GPe->MSN': (0.0015184513006654568, 0.14121597096188748), 'GPe->GPe': (0.84, 31.919999999999998), 'CMPf->GPe': (0.3426294820717131, 15.760956175298803), 'CMPf->GPi': (0.6013986013986014, 83.59440559440559), 'CMPf->FSI': (0.16165413533834586, 122.21052631578947), 'PTN->FSI': (-1, 5.0), 'CMPf->STN': (1.1168831168831168, 64.77922077922078), 'STN->MSN': (0.0004949334543254689, 0.05394774652147611), 'GPe->STN': (3.25974025974026, 61.935064935064936), 'STN->GPe': (0.2546215139442231, 74.34948207171315), 'STN->GPi': (0.38769230769230767, 63.96923076923076), 'CMPf->MSN': (0.003251663641863279, 7.244706594071385), 'FSI->FSI': (1.0, 140.0), 'CSN->MSN': (-1, 318.0), 'PTN->MSN': (-1, 5.0), 'FSI->MSN': (0.020114942528735632, 43.689655172413794), 'MSN->MSN': (1.0, 509.0), 'PTN->STN': (-1, 262.0), 'CSN->FSI': (-1, 489.0), 'GPe->FSI': (0.07548872180451129, 36.46105263157895)}
 
 write_inDegree_table("0",table,"","test_table")
 '''
 #concat_data()
+
+xytab, dico = read_2chan_file(model=1,antag='none',pathToFile="data/tests",filename="dualchanCompetition.csv")
+write_2chan_file(xytab,dico,"trucDeTesst.csv",pathToFile="data/tests", model=0,antag='none')
