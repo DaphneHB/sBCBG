@@ -500,11 +500,7 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
 
     print '------ Result ------'
     print expeRate['GPi'][0,timeStep],'Hz',expeRate['GPi'][1,timeStep],'Hz',strTestPassed
-    print "%%%%%%%555 un truc que je teste :"
-    print "channel1 : ",activityLevels[0][timeStep]
-    print "channel2 : ",activityLevels[1][timeStep]
-    print "gagnant = ",
-    print "%%%%%%%%%%%%% fin test"
+  
     # write measured firing rates in csv file
     frstr+='\n'
     firingRatesFile.writelines(frstr)
@@ -538,7 +534,7 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
 # PActiveCNS/PTN : proportion of "active" neurons in the CSN/PTN populations (in [0.,1.])
 #
 #-----------------------------------------------------------------------
-def checkGurneyTestGeneric(trials_dico,showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
+def checkGurneyTestGeneric(trials_dico,ratio = 1.5,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
   nest.ResetKernel()
   dataPath='log/'
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
@@ -566,8 +562,8 @@ def checkGurneyTestGeneric(trials_dico,showRasters=False,params={},CSNFR=[2.,10.
   #-------------------------
   # creation and connection of the neural populations
   #-------------------------
-  createBG_MC()
-  connectBG_MC(antagInjectionSite,antag)
+  #createBG_MC()
+  #connectBG_MC(antagInjectionSite,antag)
 
   #-------------------------
   # prepare the firing rates of the inputs for the 5 steps of the experiment
@@ -576,16 +572,28 @@ def checkGurneyTestGeneric(trials_dico,showRasters=False,params={},CSNFR=[2.,10.
   gPTN = PTNFR[1]-PTNFR[0]
   activityLevels1 = list()
   activityLevels2 = list()
-  xytab = map(lambda x : round(x,1),list(np.arange(0,1.,0.1)))
+  xytab = map(lambda x : round(x,1),list(xytab))
   for x in xytab :
     activityLevels1 += [x] * 10
-    activityLevels2 += values
+    activityLevels2 += xytab
+  
+  # keeping 0,0 as the first test and shuffling the rest
+  levels1 = activityLevels1[1:]
+  levels2 = activityLevels2[1:]
+  rnd.shuffle(levels1)
+  rnd.shuffle(levels2)
+  activityLevels1[1:] = levels1
+  activityLevels2[1:] = levels2
+  print "NEW act 1",activityLevels1
+  print "NEW act 2",activityLevels2
+  # TODO : not good : have to shuffle the pair......
+  
   activityLevels = np.array([activityLevels1,activityLevels2]) # for both channels
-  nbTimes = len(activityLevels[0])
+  nbTimes = len(activityLevels[0])  
   
   CSNrate= gCSN * activityLevels + np.ones((nbTimes)) * CSNFR[0]
   PTNrate= gPTN * activityLevels + np.ones((nbTimes)) * PTNFR[0]
-  
+  exit()
   #-------------------------
   # and prepare the lists of neurons that will be affected by these activity changes
   #-------------------------
@@ -651,12 +659,13 @@ def checkGurneyTestGeneric(trials_dico,showRasters=False,params={},CSNFR=[2.,10.
   frstr+='\n'
   firingRatesFile=open(dataPath+'firingRates.csv','w')
   firingRatesFile.writelines(frstr)
-
+  
   #----------------------------------
   # Loop over all the steps of the test
   #----------------------------------
   for timeStep in range(nbTimes):
     print "\n\tTime step %d\n" % timeStep
+    key = (round(activityLevels[0][timeStep],1),round(activityLevels[1][timeStep],1))
     #-------------------------
     # measures                                                                                                                                                  
     #-------------------------
@@ -668,7 +677,7 @@ def checkGurneyTestGeneric(trials_dico,showRasters=False,params={},CSNFR=[2.,10.
 
     for i in range(nbRecord):
       for N in NUCLEI:
-        spkDetect[i][N] = nest.Create("spike_detector", params={"withgid": True, "withtime": True, "label": str(timeStep)+'_'+antagStr+N, "to_file": True, 'start':offsetDuration + timeStep*(offsetDuration+simDuration),'stop':(timeStep+1)*(offsetDuration+simDuration)})
+        spkDetect[i][N] = nest.Create("spike_detector", params={"withgid": True, "withtime": True, "label": str(timeStep)+'_'+antagStr+N, "to_file": False, 'start':offsetDuration + timeStep*(offsetDuration+simDuration),'stop':(timeStep+1)*(offsetDuration+simDuration)})
         nest.Connect(Pop[N][i], spkDetect[i][N])
 
     frstr = str(timeStep) + ', '
@@ -712,11 +721,6 @@ def checkGurneyTestGeneric(trials_dico,showRasters=False,params={},CSNFR=[2.,10.
       print '------ Channel',i,'-------'
       for N in NUCLEI:
         #strTestPassed = 'NO!'
-        print expeRate[N]
-        print expeRate[N][i]
-        print expeRate[N][i][timeStep]
-        print expeRate[N][i,timeStep]
-        
         expeRate[N][i,timeStep] = nest.GetStatus(spkDetect[i][N], 'n_events')[0] / float(nbSim[N]*simDuration) * 1000
         print 't('+str(timeStep)+')',N,':',expeRate[N][i,timeStep],'Hz'
         frstr += '%f , ' %(expeRate[N][i,timeStep])
@@ -726,7 +730,7 @@ def checkGurneyTestGeneric(trials_dico,showRasters=False,params={},CSNFR=[2.,10.
     # for the no input activity in both channels
     if activityLevels[0][timeStep]==activityLevels[1][timeStep]==0 :
       for i in range(params['nbCh']):
-        if expeRate['GPi'][0,timeStep]<FRRNormal['GPi'][0]:
+        if expeRate['GPi'][i,timeStep]<FRRNormal['GPi'][0] or expeRate['GPi'][i,timeStep]>FRRNormal['GPi'][1]:
           strTestPassed = 'NO!'
           choosenChannel = "3"
         else :
@@ -736,45 +740,59 @@ def checkGurneyTestGeneric(trials_dico,showRasters=False,params={},CSNFR=[2.,10.
     elif activityLevels[0][timeStep] == activityLevels[1][timeStep] :
       if expeRate['GPi'][0,timeStep] > meanRestGPi*0.9 or expeRate['GPi'][1,timeStep] > meanRestGPi*0.9 :
         strTestPassed = 'NO!'
+        choosenChannel = "3"
+      # both ok checking the chosen one
+      elif expeRate['GPi'][0,timeStep] > expeRate['GPi'][1,timeStep] * ratio:
+        choosenChannel = "2"
+      elif expeRate['GPi'][1,timeStep] > expeRate['GPi'][0,timeStep] * ratio:
+        choosenChannel = "1"
+      else :
+        choosenChannel = "0"
     # for channel 1 input activity higher then channel 2 input activity
     elif activityLevels[0][timeStep] > activityLevels[1][timeStep] :
-      pass
+      if expeRate['GPi'][0,timeStep] > meanRestGPi*0.9 :
+        strTestPassed = 'NO!'
+        choosenChannel = "3"
+      # both ok checking the chosen one
+      elif expeRate['GPi'][0,timeStep] > expeRate['GPi'][1,timeStep] * ratio:
+        choosenChannel = "2"
+      elif expeRate['GPi'][1,timeStep] > expeRate['GPi'][0,timeStep] * ratio:
+        choosenChannel = "1"
+      else :
+        choosenChannel = "0"
     # for channel 1 input activity lower then channel 2 input activity      
     elif activityLevels[0][timeStep] < activityLevels[1][timeStep] :
-      pass
-    # TODO to remove
-    if timeStep == 0:
-      for i in range(params['nbCh']):
-        if expeRate['GPi'][0,timeStep]<FRRNormal['GPi'][0]:
-          strTestPassed = 'NO!'
-      meanRestGPi = expeRate['GPi'][:,timeStep].mean()
-    elif timeStep == 1:
-      if expeRate['GPi'][0,timeStep] > meanRestGPi*0.9:
+      if expeRate['GPi'][1,timeStep] > meanRestGPi*0.9 :
         strTestPassed = 'NO!'
-    elif timeStep == 2:
-      if expeRate['GPi'][1,timeStep] > meanRestGPi*0.9 or expeRate['GPi'][0,timeStep] < expeRate['GPi'][1,timeStep]:
-        strTestPassed = 'NO!'
-    elif timeStep == 3:
-      if expeRate['GPi'][0,timeStep] > meanRestGPi*0.9 or expeRate['GPi'][1,timeStep] > meanRestGPi*0.9 :
-        strTestPassed = 'NO!'
-    elif timeStep == 4:
-      if expeRate['GPi'][1,timeStep] > meanRestGPi*0.9 or expeRate['GPi'][0,timeStep] < expeRate['GPi'][1,timeStep]:
-        strTestPassed = 'NO!'
-
-    if strTestPassed == 'YES!':
-      score +=1
-
+        choosenChannel = "3"
+      # both ok checking the chosen one
+      elif expeRate['GPi'][0,timeStep] > expeRate['GPi'][1,timeStep] * ratio:
+        choosenChannel = "2"
+      elif expeRate['GPi'][1,timeStep] > expeRate['GPi'][0,timeStep] * ratio:
+        choosenChannel = "1"
+      else :
+        choosenChannel = "0"
+    
     print '------ Result ------'
     print expeRate['GPi'][0,timeStep],'Hz',expeRate['GPi'][1,timeStep],'Hz',strTestPassed
-    print "%%%%%%%555 un truc que je teste :"
-    print "channel1 : ",activityLevels[0][timeStep]
-    print "channel2 : ",activityLevels[1][timeStep]
-    print "gagnant = ",
-    print "%%%%%%%%%%%%% fin test"
-    # write measured firing rates in csv file
-    frstr+='\n'
-    firingRatesFile.writelines(frstr)
 
+    chan1Val = activityLevels[0][timeStep]
+    chan2Val = activityLevels[1][timeStep]
+    print "channel1 : ",chan1Val
+    print "channel2 : ",chan2Val
+    print "gagnant = ", choosenChannel
+    print "--------------------"
+    if trials_dico.has_key(key) :
+      trials_dico[key].append(choosenChannel)
+    else :
+      trials_dico[key] = [choosenChannel]
+      
+    # write measured firing rates in csv file
+    #frstr+='\n'
+    #firingRatesFile.writelines(frstr)
+
+    os.system("rm -f log/*.gdf")
+    
     #-------------------------
     # Displays
     #-------------------------
@@ -790,7 +808,6 @@ def checkGurneyTestGeneric(trials_dico,showRasters=False,params={},CSNFR=[2.,10.
 
       nest.raster_plot.show()
     '''
-
   if showRasters and interactive:
     for N in NUCLEI:
       nest.raster_plot.from_device(inspector[N],hist=True,title=N)

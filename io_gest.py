@@ -223,5 +223,7 @@ write_inDegree_table("0",table,"","test_table")
 '''
 #concat_data()
 
+'''
 xytab, dico = read_2chan_file(model=1,antag='none',pathToFile="data/tests",filename="dualchanCompetition.csv")
 write_2chan_file(xytab,dico,"trucDeTesst.csv",pathToFile="data/tests", model=0,antag='none')
+'''
