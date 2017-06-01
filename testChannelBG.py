@@ -534,7 +534,7 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
 # PActiveCNS/PTN : proportion of "active" neurons in the CSN/PTN populations (in [0.,1.])
 #
 #-----------------------------------------------------------------------
-def checkGurneyTestGeneric(trials_dico,ratio = 1.5,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
+def checkGurneyTestGeneric(trials_dico,ratio = 1.5,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
   nest.ResetKernel()
   dataPath='log/'
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
@@ -562,8 +562,8 @@ def checkGurneyTestGeneric(trials_dico,ratio = 1.5,xytab=np.arange(0.,1.,0.1),sh
   #-------------------------
   # creation and connection of the neural populations
   #-------------------------
-  #createBG_MC()
-  #connectBG_MC(antagInjectionSite,antag)
+  createBG_MC()
+  connectBG_MC(antagInjectionSite,antag)
 
   #-------------------------
   # prepare the firing rates of the inputs for the 5 steps of the experiment
@@ -577,23 +577,19 @@ def checkGurneyTestGeneric(trials_dico,ratio = 1.5,xytab=np.arange(0.,1.,0.1),sh
     activityLevels1 += [x] * 10
     activityLevels2 += xytab
   
-  # keeping 0,0 as the first test and shuffling the rest
-  levels1 = activityLevels1[1:]
-  levels2 = activityLevels2[1:]
-  rnd.shuffle(levels1)
-  rnd.shuffle(levels2)
-  activityLevels1[1:] = levels1
-  activityLevels2[1:] = levels2
-  print "NEW act 1",activityLevels1
-  print "NEW act 2",activityLevels2
-  # TODO : not good : have to shuffle the pair......
+  if shuffled :
+    # keeping 0,0 as the first test and shuffling the rest
+    zipper = zip(activityLevels1[1:],activityLevels2[2:])
+    rnd.shuffle(zipper) # to have it with a random seed : rnd.shuffle(zipper,rnd.random)
+    zipper = zip(*zipper)
+    activityLevels1[1:] = zipper[0]
+    activityLevels2[1:] = zipper[1]
   
   activityLevels = np.array([activityLevels1,activityLevels2]) # for both channels
   nbTimes = len(activityLevels[0])  
   
   CSNrate= gCSN * activityLevels + np.ones((nbTimes)) * CSNFR[0]
   PTNrate= gPTN * activityLevels + np.ones((nbTimes)) * PTNFR[0]
-  exit()
   #-------------------------
   # and prepare the lists of neurons that will be affected by these activity changes
   #-------------------------

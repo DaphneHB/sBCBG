@@ -666,8 +666,8 @@ Arguments :
   - xtab, the list of x values (also y value : symetric, square)
   - the data, a dict {value tuple : chan percentage tuple} where value tuple is the x,y coordinates
 '''
-def plot_multichan_pieChart(tab, values_dict, model,antag,save=None) :
-  print "Plotting the 2-channels action selection competition for #%d with Antagonist=%s" % (model,antag)
+def plot_multichan_pieChart(tab, values_dict, model,ratio,NbTrials,shuffled,save=None) :
+  print "Plotting the 2-channels action selection competition for #%d" % model
   nbVals = float(len(tab)) + 1
   step = round(1/nbVals,1)
   cols=["grey","blue","green","red"]
@@ -682,8 +682,9 @@ def plot_multichan_pieChart(tab, values_dict, model,antag,save=None) :
   plt.ylabel('Channel 2\'s input activity')
   new_tab = np.arange(expe_range[0],expe_range[1],step)
   plt.xticks(new_tab)
-  plt.yticks(new_tab)  
-  plt.title('2-channels action selection competition\n#%d Antagonist=%s' % (model,antag))
+  plt.yticks(new_tab)
+  shuffleStr = "shuffled inputs" if shuffled else "non-shuffled inputs"
+  plt.title('2-channels action selection competition\n#%d (over %d trials with %s)\n[ratio=%d]' % (model,NbTrials,shuffleStr,ratio))
   plt.gca().set_aspect('equal', adjustable='box')
   plt.grid()
   #legend

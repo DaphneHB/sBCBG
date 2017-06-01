@@ -423,32 +423,37 @@ pathToData is to know where to save the file
 model is model number to test
 antag is none/all/GPe_AMPA/GPe_GABAA/GPe_NMDA/GPe_AMPA+GABAA/GPi_NMDA/GPi_AMPA/GPi_GABAA/GPI_NMDA+AMPA
 '''
-def generate_GurneyTest(ratioChan1Chan2=1.9,values=np.arange(0.,1.,0.1),generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=0,antag='none',save=False) :
+def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False) :
   from testChannelBG import *
   
   currtime = str(datetime.now())
   trials_dico = {}
   xytab = None
+  if not model is None :
+    params['LG14modelID'] = model
+    switch_model(model)
+  else :
+    model = params['LG14modelID']
   if generate or filename is None:
     for trial in range(NbTrials) :
       os.system("rm -r log/*")
       print "############################## TRIAL no. %d ###########################" % trial
       # launch GurneyTestsgeneric
-      xytab,this_trial = checkGurneyTestGeneric(trials_dico,ratio=ratioChan1Chan2,showRasters=True,params=params,PActiveCSN=0.2,PActivePTN=0.2)
+      xytab,this_trial = checkGurneyTestGeneric(trials_dico,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=True,params=params,PActiveCSN=0.2,PActivePTN=0.2)
       trials_dico.update(this_trial)
     if filename is None :
       filename = "log/" + currtime + "dualchanCompetition.csv"
-    io.write_2chan_file(xytab,trials_dico,filename,pathToFile=pathToData,model=model,antag=antag)
+    io.write_2chan_file(xytab,trials_dico,filename,pathToFile=pathToData,model=model)
   else :
     filename = "log/" + filename
-    xytab,trials_dico = io.read_2chan_file(filename,pathToFile=pathToData,model=model,antag=antag)
+    xytab,trials_dico = io.read_2chan_file(filename,pathToFile=pathToData,model=model)
   #print trials_dico
   trials_dico = pltT.dualchanFileToPercentages(trials_dico)
   #print trials_dico
   savename = None
   if save :
-    savename = "plots/" + currtime + "gurneyTest(" + str(ratioChan1Chan2) + ")#" + str(model) + "_" + antag + ".png"
-  pltT.plot_multichan_pieChart(xytab,trials_dico,model,antag,save=savename)
+    savename = "plots/" + currtime + "gurneyTest(" + str(ratioChan1Chan2) + ")#" + str(model) + ".png"
+  pltT.plot_multichan_pieChart(xytab,trials_dico,model,ratioChan1Chan2,NbTrials,shuffled,save=savename)
 
 '''
 for md in range(0,15) :
@@ -501,7 +506,7 @@ for g in np.arange(4.,6.,0.1) :
 #  print items
 
 #generate_GurneyTest(generate=False,save=True,filename="2017-05-31 15:51:26.783822dualchanCompetition.csv")
-generate_GurneyTest(generate=True,NbTrials=5,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),save=True)
+generate_GurneyTest(generate=True,NbTrials=5,shuffled=True, model=9,ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),save=True)
 #per = pltT.dualchanFileToPercentages(di)
 #print per
 #pltT.plot_multichan_pieChart(np.arange(0,1.1,0.1),per)
