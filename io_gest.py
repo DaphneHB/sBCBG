@@ -219,8 +219,14 @@ def write_2chan_file(xytab,trials_dico,ratio,shuffled,filename,pathToFile=os.get
     keyTxt = str(keys[0]) + ";" + str(keys[1]) + ";"
     valTxt = ";".join(values) # values is already a list of string ["1","2","0","3"...]
     textToWrite += keyTxt + valTxt + "\n"
-  with open(os.path.join(directory,filename),"w") as outFile :
-    outFile.write(textToWrite)
+  try :
+    with open(os.path.join(directory,filename),"w") as outFile :
+      outFile.write(textToWrite)
+  except IOError as e:
+    os.system("mkdir -p %s" % directory)
+    with open(os.path.join(directory,filename),"w") as outFile :
+      outFile.write(textToWrite)
+    
   print "\tData saved in %s file in %s directory" % (filename,directory)
 
 '''

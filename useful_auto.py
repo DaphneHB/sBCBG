@@ -429,7 +429,9 @@ Arguments :
 def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False) :
   from testChannelBG import *
   
-  currtime = str(datetime.now())
+  execTime = time.localtime()
+  currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
+  
   trials_dico = {}
   xytab = values
   if not model is None :
@@ -449,6 +451,7 @@ def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=
     io.write_2chan_file(xytab,trials_dico,ratioChan1Chan2,shuffled,filename,pathToFile=pathToData,model=model)
   else :
     xytab,trials_dico = io.read_2chan_file(filename,pathToFile=pathToData,model=model)
+    print "\n.... Value's array = ",xytab
   #print trials_dico
   trials_dico = pltT.dualchanFileToPercentages(trials_dico)
   #print trials_dico
@@ -508,7 +511,7 @@ for g in np.arange(4.,6.,0.1) :
 #  print items
 
 #generate_GurneyTest(generate=False,save=True,filename="2017-05-31 15:51:26.783822dualchanCompetition.csv")
-generate_GurneyTest(generate=False,filename="2017-06-01 15:30:12.748089dualchanCompetition.csv",NbTrials=1,ratioChan1Chan2=1.5,values=[0.,1.,1.1],save=False)
+generate_GurneyTest(generate=True,NbTrials=1,ratioChan1Chan2=1.5,values=[0.,1.,1.1],save=False)
 #per = pltT.dualchanFileToPercentages(di)
 #print per
 #pltT.plot_multichan_pieChart(np.arange(0,1.1,0.1),per)
