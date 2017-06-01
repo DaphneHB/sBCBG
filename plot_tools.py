@@ -684,7 +684,7 @@ def plot_multichan_pieChart(tab, values_dict, model,ratio,NbTrials,shuffled,save
   plt.xticks(new_tab)
   plt.yticks(new_tab)
   shuffleStr = "shuffled inputs" if shuffled else "non-shuffled inputs"
-  plt.title('2-channels action selection competition\n#%d (over %d trials with %s)\n[ratio=%d]' % (model,NbTrials,shuffleStr,ratio))
+  plt.title('2-channels action selection competition\n#%d (over %d trials with %s)\n[ratio=%.3f]' % (model,NbTrials,shuffleStr,ratio))
   plt.gca().set_aspect('equal', adjustable='box')
   plt.grid()
   #legend

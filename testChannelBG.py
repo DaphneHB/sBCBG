@@ -534,7 +534,7 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
 # PActiveCNS/PTN : proportion of "active" neurons in the CSN/PTN populations (in [0.,1.])
 #
 #-----------------------------------------------------------------------
-def checkGurneyTestGeneric(trials_dico,ratio = 1.5,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
+def checkGurneyTestGeneric(trials_dico,ratio=1.5,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
   nest.ResetKernel()
   dataPath='log/'
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
