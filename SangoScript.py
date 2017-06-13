@@ -64,7 +64,7 @@ interactive = False
 params = {'nbcpu':    %s,
           'nbCh' :    %d,
           'LG14modelID': %2d,
-          'whichTest': %s, # which test was used to generate the log
+          'whichTest': '%s', # which test was used to generate the log
           'nbMSN':    %f,
           'nbFSI':    %f,
           'nbSTN':    %f,

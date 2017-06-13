@@ -6,12 +6,13 @@ Created on Fri Mar 24 11:29:18 2017
 """
 
 from testFullBG import *
+from testChannelBG import *
 
 import os
 import re
+import time
 import plot_tools as pltT
 import io_gest as io
-from datetime import datetime
 
 '''
 To download the accurate parametrization for the current model
@@ -203,6 +204,9 @@ a tuple (variable,nucleus) define a figure
 def generate_param_score_analyze(variables, nuclei, path=None, score=0, model=None, separated=True, save=False) :
   if path is None :
     path = os.getcwd()
+  execTime = time.localtime()
+  currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
+  
   # whether we want to plot for multiple params
   if len(variables) == len(nuclei) == 1 :
     plotName = "plots/scoreRatio" + variables[0] + nuclei[0] + "#" + str(model) + ".png"
@@ -228,7 +232,7 @@ def generate_param_score_analyze(variables, nuclei, path=None, score=0, model=No
     nbV = len(variables)
     for i in range(nbN) :
       for j in range(nbV) :
-        plotName = "plots/scoreRatio" + variables[j] + nuclei[i] + "#" + str(model) + ".png"
+        plotName = "plots/" + currtime + "scoreRatio" + variables[j] + nuclei[i] + "#" + str(model) + ".png"
         pltT.plot_score_ratio(variables[j], nuclei[i], dataPath=path, score=score, model=model, axis=None,save=plotName)
         
   if not save :
@@ -304,7 +308,10 @@ def generate_param_analyze(param1,param2,param3=None,save=False,path=os.getcwd()
 def generate_models_ranges_tab(parametrization=None,to_generate=True, validationPath=os.getcwd(),paramFilePath=None, models=np.arange(0,15,1), score=0, with_antag=False,save=False) :
   allFRdata = {}
   validFile = os.path.join(validationPath,"validationArray.csv")
-    
+  
+  execTime = time.localtime()
+  currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
+  
   if to_generate :
     launching_exec_by_models(validFile,models=models,score=score,with_antag=with_antag)
   #path = os.path.dirname(paramFilePath)
@@ -323,13 +330,16 @@ def generate_models_ranges_tab(parametrization=None,to_generate=True, validation
   # plotting with plot_tools file
   filename = None
   if save :
-      filename = "plots/" + str(datetime.now()) + "modelsValidation.png"
+      filename = "plots/" + currtime + "modelsValidation.png"
   pltT.plot_models_ranges(allFRdata, legend, filename=filename, models=nmodels)
   
   
  
 def generate_gap_from_range_local(n_var, interv,save=False,to_generate=True,model=0,paramFilePath=None,pathToFile=os.getcwd(),removing=[],with_antag=False) :
   global NUCLEI
+  execTime = time.localtime()
+  currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
+  
   validFile = os.path.join(pathToFile,"validationArray.csv")
   print "Simulating for " + n_var
   if to_generate :
@@ -350,13 +360,16 @@ def generate_gap_from_range_local(n_var, interv,save=False,to_generate=True,mode
   # plotting with plot_tools file
   filename = None
   if save :
-      filename = "plots/" + str(datetime.now()) + "gapPlot_"+n_var+"_model"+str(model)+".png"
+      filename = "plots/" + currtime + "gapPlot_"+n_var+"_model"+str(model)+".png"
   pltT.plot_gap_from_range(vals, n_var, interv, results, model, filename=filename,param=legend)
 
 
 # completely TODO
 def generate_gap_from_range_global(n_var,save=False,model=0,paramFilePath=None,pathToFile=os.getcwd(),removing=[]) :
   global NUCLEI
+  execTime = time.localtime()
+  currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
+  
   validFile = os.path.join(pathToFile,"validationArray.csv")
   print "Simulating for " + n_var
   print "****************Simulation with Model %d******************" % model
@@ -374,13 +387,16 @@ def generate_gap_from_range_global(n_var,save=False,model=0,paramFilePath=None,p
   # plotting with plot_tools file
   filename = None
   if save :
-      filename = "plots/" + str(datetime.now()) + "gapPlot_"+n_var+"_model"+str(model)+".png"
+      filename = "plots/" + currtime + "gapPlot_"+n_var+"_model"+str(model)+".png"
   pltT.plot_gap_from_range(vals, n_var, interv, results, model, filename=filename,param=legend)
   
   
   
 def generate_best_score_comp(figAxes=None,path=os.getcwd(), score=0, model=None, separated=True, save=False) :
   global NUCLEI
+  execTime = time.localtime()
+  currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
+  
   # whether we want to plot for multiple params
   nbN = len(NUCLEI)
   parameters = ["G" + N for N in NUCLEI] + ["IeGPe","IeGPi"]
@@ -404,10 +420,10 @@ def generate_best_score_comp(figAxes=None,path=os.getcwd(), score=0, model=None,
       simu_color = pltT.plot_score_by_value(p, paramData[p], simu_color, model=model, axis=ax,filename=None)
     if save :
       nucleiStr = "_" + "+".join(parameters)
-      fig.savefig("plots/" + str(datetime.now()) + "bestScores" + nucleiStr + "#" + str(model) + ".png")
+      fig.savefig("plots/" + currtime + "bestScores" + nucleiStr + "#" + str(model) + ".png")
   else :
     for i,p in enumerate(parameters) :
-      plotName = "plots/" + str(datetime.now()) + "bestScores" + p + "#" + str(model) + ".png"
+      plotName = "plots/" + currtime + "bestScores" + p + "#" + str(model) + ".png"
       simu_color = pltT.plot_score_by_value(p, paramData[p], simu_color, model=model, axis=None,filename=plotName)
   if not save :
     pltT.plt.show()
@@ -427,7 +443,6 @@ Arguments :
 - pathToData is to know where to save the file
 '''
 def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False) :
-  from testChannelBG import *
   
   execTime = time.localtime()
   currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
@@ -441,14 +456,14 @@ def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=
     model = params['LG14modelID']
   if generate or filename is None:
     for trial in range(NbTrials) :
-      os.system("rm -r log/*")
+      os.system("rm -fr log/*")
       print "############################## TRIAL no. %d ###########################" % trial
       # launch GurneyTestsgeneric
-      xytab,this_trial = checkGurneyTestGeneric(trials_dico,xytab=xytab,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=True,params=params,PActiveCSN=0.2,PActivePTN=0.2)
+      xytab,this_trial = checkGurneyTestGeneric(trials_dico,xytab=xytab,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=False,params=params,PActiveCSN=0.2,PActivePTN=0.2)
       trials_dico.update(this_trial)
     if filename is None :
       filename = currtime + "dualchanCompetition.csv"
-    io.write_2chan_file(xytab,trials_dico,ratioChan1Chan2,shuffled,filename,pathToFile=pathToData,model=model)
+    io.write_2chan_chanChoicefile(xytab,trials_dico,ratioChan1Chan2,shuffled,filename,pathToFile=pathToData,model=model)
   else :
     xytab,trials_dico = io.read_2chan_file(filename,pathToFile=pathToData,model=model)
     print "\n.... Value's array = ",xytab
@@ -459,59 +474,114 @@ def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=
   if save :
     savename = "plots/" + currtime + "gurneyTest(" + str(ratioChan1Chan2) + ")#" + str(model) + ".png"
   pltT.plot_multichan_pieChart(xytab,trials_dico,model,ratioChan1Chan2,NbTrials,shuffled,save=savename)
+    
 
-'''
-for md in range(0,15) :
-  generate_table(md,save=True)
-'''
+def generate_GurneyTestZero(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False,rezero=False,rev=False,simuTime=800,sameVal=None,constantChan=None) :
+  
+  execTime = time.localtime()
+  currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
+  
+  frtrials_dico = {}
+  xytab = values
+  if not model is None :
+    params['LG14modelID'] = model
+    switch_model(model)
+  else :
+    model = params['LG14modelID']
+  for trial in range(NbTrials) :
+    os.system("rm -fr log/*")
+    print "############################## TRIAL no. %d ###########################" % trial
+    # launch GurneyTestsgeneric
+    if rezero :
+      print "\tWith return to ZERO by regenerating (0.,0.) !"
+    else :
+      print "\tWith return to ZERO by saving the (0.,0.) state !"
+    steps,frates,selections,activities,frtrials_dico = checkGurneyTestGenericReZero(frtrials_dico,xytab=xytab,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=False,params=params,PActiveCSN=0.2,PActivePTN=0.2,reversing=rev,simuTime=simuTime,sameVal=sameVal,constantChan=constantChan,rezero=rezero)
+  if filename is None :
+    filename = currtime + "rezero2ChansCompetition.csv"
+  # saving all the data in one file
+  io.write_2chan_franalyzeFile(values,frtrials_dico,ratioChan1Chan2,shuffled,NbTrials,filename,pathToFile=pathToData, model=model,rezero=rezero,reversedChans=rev)
+      
+  savename = None
+  if save :
+    rev = "ChanReversed" if rev else ""
+    savename = "plots/" + currtime + "gurneyTestFRbyStep(" + str(ratioChan1Chan2) + ")#" + str(model) + rev + "simu" + str(simuTime) + "ms.png"
+  pltT.plot_fr_by_time(steps,frates,selections,zip(*activities),model,ratioChan1Chan2,shuffled,NbTrials,simuTime,reversedChans=rev,save=savename)
+  pltT.plot_errorFR_by_activity(zip(*activities),frtrials_dico,model,ratioChan1Chan2,shuffled,NbTrials,simuTime,reversedChans=rev,save=savename)
 
-#generate_table(2)
-#generate_margin_plot(glob=False,antag='none',path="/home/daphnehb/OIST/sBCBG3/",limit=100,score=0)
-#generate_margin_plot(glob=True,antag='all',path="/home/daphnehb/OIST/SangoTests/model5/2017_4_13/",limit=5,score=0)
-#generate_param_score_analyze(['G','Ie'], ['MSN','FSI','GPe','GPi','STN'],score=0, save=False,separated=True,path="/home/daphnehb/OIST/SangoTests/model1/2017_4_21")
-#generate_param_analyze("GMSN","GFSI",param3="GSTN", score=11,save=False,path="/home/daphnehb/OIST/SangoTests/model1/2017_4_21",model=1)
-#generate_fr_by_param('GPe','Ie', (5.,13.,1),with_antag=True)
-#generate_fr_by_param('GPi','Ie', (5.,15.,1),with_antag=True)
-#generate_fr_by_param('MSN','G', (4.,7.,0.25),with_antag=True)
-'''
-generate_fr_by_param('GPi','G', (5.,15.,0.5),with_antag=True)
-generate_fr_by_param('STN','G', (1.2,1.5,0.01),with_antag=True)
-generate_fr_by_param('GPe','G', (0.01,0.5,0.01),with_antag=True)
-#generate_fr_by_param('FSI','G', (0.5,1.8,0.01),with_antag=True)
-'''
 
-#generate_fr_by_param('MSN','G', (4.,6.,0.1), model=1,with_antag=True)
+def launch_SangoGurney() :
+  ratio = gurneyParams['chanRatio']
+  saving = gurneyParams['toSave']
+  shuffled = gurneyParams['shuffled']
+  nbTrials = gurneyParams['NbTrials']
+  startTime = time.time()
+  generate_GurneyTest(generate=True,NbTrials=nbTrials,ratioChan1Chan2=ratio,save=saving,shuffled=shuffled)
+  endTime = time.time()
+  os.system("echo \"Taken time in ms : %f\" > simuDuration.txt" % (endTime-startTime))
 
-#params['LG14modelID'] = 3
-#params['GMSN'] = 5.7
-#generate_fr_by_param('GPi','G', (0.5,6.,0.1),with_antag=True)
-'''
-for N in NUCLEI :
-  # for each nucleus generating G plot
-  #generate_fr_by_param(N,'G', (0.5,26,0.1))
-  if "GPi" in N :
-    generate_fr_by_param(N,'Ie', (5,30,1))
-'''
-#params['LG14modelID'] = 3
-'''
-for g in np.arange(4.,6.,0.1) :
-  params['GMSN'] = g
-  print "GGGGGGGGGG = ",g
-  generate_models_ranges_tab(parametrization=params, to_generate=True,with_antag=True,save=True)
-'''
-#params['GMSN'] = 4.8
-#params['GFSI'] = 1.2
-#params['GSTN'] = 1.33
-#params['GGPe'] = 1.0
-#generate_gap_from_range_local("IeGPe",(6.,7.,1.),to_generate=True,model=14,save=False,removing=[],with_antag=True)
-#generate_models_ranges_tab(parametrization=params, to_generate=False,with_antag=True,save=False)
-#generate_best_score_comp(figAxes=None,path="/home/daphnehb/OIST/SangoTests/model5/2017_4_13/", score=0, model=5, separated=True, save=False)
+  
+def main() :
+  
+  '''
+  for md in range(0,15) :
+    generate_table(md,save=True)
+  '''
+  
+  #generate_table(2)
+  #generate_margin_plot(glob=False,antag='none',path="/home/daphnehb/OIST/sBCBG3/",limit=100,score=0)
+  #generate_margin_plot(glob=True,antag='all',path="/home/daphnehb/OIST/SangoTests/model5/2017_4_13/",limit=5,score=0)
+  #generate_param_score_analyze(['G','Ie'], ['MSN','FSI','GPe','GPi','STN'],score=0, save=False,separated=True,path="/home/daphnehb/OIST/SangoTests/model1/2017_4_21")
+  #generate_param_analyze("GMSN","GFSI",param3="GSTN", score=11,save=False,path="/home/daphnehb/OIST/SangoTests/model1/2017_4_21",model=1)
+  #generate_fr_by_param('GPe','Ie', (5.,13.,1),with_antag=True)
+  #generate_fr_by_param('GPi','Ie', (5.,15.,1),with_antag=True)
+  #generate_fr_by_param('MSN','G', (4.,7.,0.25),with_antag=True)
+  '''
+  generate_fr_by_param('GPi','G', (5.,15.,0.5),with_antag=True)
+  generate_fr_by_param('STN','G', (1.2,1.5,0.01),with_antag=True)
+  generate_fr_by_param('GPe','G', (0.01,0.5,0.01),with_antag=True)
+  #generate_fr_by_param('FSI','G', (0.5,1.8,0.01),with_antag=True)
+  '''
+  
+  #generate_fr_by_param('MSN','G', (4.,6.,0.1), model=1,with_antag=True)
+  
+  #params['LG14modelID'] = 3
+  #params['GMSN'] = 5.7
+  #generate_fr_by_param('GPi','G', (0.5,6.,0.1),with_antag=True)
+  '''
+  for N in NUCLEI :
+    # for each nucleus generating G plot
+    #generate_fr_by_param(N,'G', (0.5,26,0.1))
+    if "GPi" in N :
+      generate_fr_by_param(N,'Ie', (5,30,1))
+  '''
+  #params['LG14modelID'] = 3
+  '''
+  for g in np.arange(4.,6.,0.1) :
+    params['GMSN'] = g
+    print "GGGGGGGGGG = ",g
+    generate_models_ranges_tab(parametrization=params, to_generate=True,with_antag=True,save=True)
+  '''
+  #params['GMSN'] = 4.8
+  #params['GFSI'] = 1.2
+  #params['GSTN'] = 1.33
+  #params['GGPe'] = 1.0
+  #generate_gap_from_range_local("IeGPe",(6.,7.,1.),to_generate=True,model=14,save=False,removing=[],with_antag=True)
+  #generate_models_ranges_tab(parametrization=params, to_generate=False,with_antag=True,save=False)
+  #generate_best_score_comp(figAxes=None,path="/home/daphnehb/OIST/SangoTests/model5/2017_4_13/", score=0, model=5, separated=True, save=False)
+  
+  #for items in compute_inDegree(14).items() :
+  #  print items
+  
+  #generate_GurneyTest(generate=False,save=True,filename="2017-05-31 15:51:26.783822dualchanCompetition.csv")
+  #generate_GurneyTest(generate=True,NbTrials=1,ratioChan1Chan2=1.5,values=[0.,1.,1.1],save=False)
+  
+  
+  generate_GurneyTestZero(generate=True,NbTrials=15,ratioChan1Chan2=1.5,shuffled=False,save=True,rezero=True,simuTime=1000,rev=False,sameVal=(0.3,0.5,50),constantChan=(0,0.),model=9)
+  #generate_GurneyTestZero(generate=True,NbTrials=5,ratioChan1Chan2=1.5,shuffled=False,save=True,rezero=True,simuTime=10000,rev=True)
+  ######## test on Sango
+  #launch_SangoGurney()
 
-#for items in compute_inDegree(14).items() :
-#  print items
 
-#generate_GurneyTest(generate=False,save=True,filename="2017-05-31 15:51:26.783822dualchanCompetition.csv")
-generate_GurneyTest(generate=True,NbTrials=1,ratioChan1Chan2=1.5,values=[0.,1.,1.1],save=False)
-#per = pltT.dualchanFileToPercentages(di)
-#print per
-#pltT.plot_multichan_pieChart(np.arange(0,1.1,0.1),per)
+if __name__ == '__main__' :
+  main()

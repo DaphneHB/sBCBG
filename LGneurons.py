@@ -114,6 +114,7 @@ def createMC(name,nbCh,fake=False,parrot=True):
     for i in range(nbCh):
       Pop[name].append(nest.Create("iaf_psc_alpha_multisynapse",int(nbSim[name]),params=BGparams[name]))
 
+
 #-------------------------------------------------------------------------------
 # Establishes a connexion between two populations, following the results of LG14
 # type : a string 'ex' or 'in', defining whether it is excitatory or inhibitory
@@ -307,7 +308,7 @@ def computeW(listRecType,nameSrc,nameTgt,inDegree,gain=1.,verbose=False):
 
 #-------------------------------------------------------------------------------
 
-rnd.seed(17)
+rnd.seed(15)
 #nest.SetKernelStatus({'local_num_threads':2, "data_path": "log/", "overwrite_files":True})
 nest.SetKernelStatus({'local_num_threads':2, "data_path": "log/"})
 

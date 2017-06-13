@@ -197,17 +197,19 @@ The storing directory is "data/files/
 
 File format :
 #model_nb
-antag_type
+ratio=x.xxx
+shuffled=True/False
 xvalues separated by a ;
 \n
 X ; Y ; 0, 1 or 2 (choosen channel); 0, 1 or 2; 0, 1 or 2 .... [as much as the nb of trials]
 .
 .
 .
+
 [100 values - 10x * 10y]
 
 '''
-def write_2chan_file(xytab,trials_dico,ratio,shuffled,filename,pathToFile=os.getcwd(), model=0,antag='none') :
+def write_2chan_chanChoicefile(xytab,trials_dico,ratio,shuffled,filename,pathToFile=os.getcwd(), model=0) :
   print "------------- Saving data -----------"
   # retrieving the string for the xytab values
   xytext = ";".join(map(str,xytab))
@@ -228,6 +230,53 @@ def write_2chan_file(xytab,trials_dico,ratio,shuffled,filename,pathToFile=os.get
       outFile.write(textToWrite)
     
   print "\tData saved in %s file in %s directory" % (filename,directory)
+  
+
+'''
+Given the results of the GurneyTest, stocked in a dico trials_dico
+Write the results with all the necessary data in filename file
+The storing directory is "data/files/
+
+File format :
+#model_nb
+ratio=x.xxx
+shuffled=True/False
+NbTrials=xx
+ReZero=True/False
+ReversedChannels=True/False
+\n
+xvalues separated by a ;
+\n
+X ; Y ; 0, 1 or 2 (choosen channel); 0, 1 or 2; 0, 1 or 2 .... [as much as the nb of trials]
+.
+.
+.
+[100 values - 10x * 10y]
+
+'''
+def write_2chan_franalyzeFile(xytab,frTrials_dico,ratio,shuffled,nbTrials,filename,pathToFile=os.getcwd(), model=None,rezero=False,reversedChans=False) :
+  print "------------- Saving data -----------"
+  # retrieving the string for the xytab values
+  xytext = ";".join(map(str,xytab))
+  # first writting the model and the antag
+  textToWrite = "#%d\nratio=%.3f\nshuffled=%s\nNbTrials=%d\nReZero=%s\nReversedChannels=%s\n\n%s\n\n" % (model,ratio,shuffled,nbTrials,rezero,reversedChans,xytext)
+  directory = os.path.join(pathToFile,"data/files/")
+  # writing every trails for each (x.y) tuple
+  for keys,values in frTrials_dico.items() :
+    keyTxt = str(keys[0]) + ";" + str(keys[1]) + ";"
+    valTxt = ";".join(map(lambda x: str(x[0])+","+str(x[1])+","+str(x[2])+","+x[3],values)) # values is a list of (3 int and a str) tuples
+    textToWrite += keyTxt + valTxt + "\n"
+  try :
+    with open(os.path.join(directory,filename),"w") as outFile :
+      outFile.write(textToWrite)
+  except IOError as e:
+    os.system("mkdir -p %s" % directory)
+    with open(os.path.join(directory,filename),"w") as outFile :
+      outFile.write(textToWrite)
+    
+  print "\tData saved in %s file in %s directory" % (filename,directory)
+  
+
 
 '''
 table = {'MSN->GPe': (105.37051792828686, 18018.358565737053), 'MSN->GPi': (151.65986013986014, 31696.91076923077), 'GPe->GPi': (1.4744055944055943, 23.59048951048951), 'GPe->MSN': (0.0015184513006654568, 0.14121597096188748), 'GPe->GPe': (0.84, 31.919999999999998), 'CMPf->GPe': (0.3426294820717131, 15.760956175298803), 'CMPf->GPi': (0.6013986013986014, 83.59440559440559), 'CMPf->FSI': (0.16165413533834586, 122.21052631578947), 'PTN->FSI': (-1, 5.0), 'CMPf->STN': (1.1168831168831168, 64.77922077922078), 'STN->MSN': (0.0004949334543254689, 0.05394774652147611), 'GPe->STN': (3.25974025974026, 61.935064935064936), 'STN->GPe': (0.2546215139442231, 74.34948207171315), 'STN->GPi': (0.38769230769230767, 63.96923076923076), 'CMPf->MSN': (0.003251663641863279, 7.244706594071385), 'FSI->FSI': (1.0, 140.0), 'CSN->MSN': (-1, 318.0), 'PTN->MSN': (-1, 5.0), 'FSI->MSN': (0.020114942528735632, 43.689655172413794), 'MSN->MSN': (1.0, 509.0), 'PTN->STN': (-1, 262.0), 'CSN->FSI': (-1, 489.0), 'GPe->FSI': (0.07548872180451129, 36.46105263157895)}

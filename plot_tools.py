@@ -734,6 +734,95 @@ def plot_piechart(axes,percentages,colors) :
   axes.set_aspect('equal', adjustable='box')
   return axes
 
+def plot_fr_by_time(steps,firingRates,selected,actLevels,model,ratio,shuffled,nbTrials,simuTime,reversedChans,save=None) :
+  print "Plotting the 2-channels action selection competition for #%d" % model
+  cols=["grey","blue","green","red"]
+  fig = plt.figure(figsize=(10,10))
+  # specifications of the plot
+  plt.xlabel('Time Steps',fontsize=12)
+  plt.ylabel('Firing Rates (Hz)',fontsize=12)
+  shuffleStr = "shuffled inputs" if shuffled else "non-shuffled inputs"
+  revStr = "channels reversed" if reversedChans else ""
+  plt.title('2-channels action selection competition FR\n#%d (over %d trials with %s)\n[ratio=%.3f simuTime=%dms %s]\n\n' % (model,nbTrials,shuffleStr,ratio,simuTime,revStr),fontsize=10)
+  plt.grid()
+  plt.xticks(steps,fontsize=10)
+  ax2 = plt.twiny()
+  actLevels = map(lambda x : "("+str(x[0])+",\n"+str(x[1])+")",actLevels)
+  ax2.set_xticks(steps)
+  ax2.set_xticklabels(actLevels,fontsize=7)
+  #legend
+  p1 = Rectangle((0, 0), 1, 1, fc=cols[0])
+  p2 = Rectangle((0, 0), 1, 1, fc=cols[1])
+  p3 = Rectangle((0, 0), 1, 1, fc=cols[2])
+  p4 = Rectangle((0, 0), 1, 1, fc=cols[3])
+  p5 = mlines.Line2D(range(1), range(1), color="white",marker='o',markersize=8,markerfacecolor="black")
+  plt.legend([p1,p2,p3,p4,p5], ["No selection","Channel 1", "Channel 2", "Error","Selected"],bbox_to_anchor=(1.1, 1.),fontsize='x-small')
+  # plotting
+  plt.plot(steps,firingRates[0],color=cols[1])
+  plt.plot(steps,firingRates[1],color=cols[2])
+  for st,pt in zip(steps,selected) :
+    plt.scatter([st],[0],s=500,c=cols[int(pt)],edgecolor='')
+
+  # if the filename is not defined in save variable
+  if save is None:
+    print "\tShowing plot"
+    plt.show()
+  else :
+    print "\tPlot saved under the name %s" % save
+    fig.savefig(save)  
+
+def draw_boxplot(ax,data, fill_color):
+  bp = ax.boxplot(data, patch_artist=True,notch=False,vert=True)
+
+  for patch in bp['boxes']:
+      patch.set(facecolor=fill_color)       
+
+
+def plot_errorFR_by_activity(actLevels,frtrials_dict,model,ratio,shuffled,nbTrials,simuTime,reversedChans,save=None) :
+  print "Plotting the 2-channels action selection competition for #%d" % model
+  cols=["grey","blue","green","red"]
+  fig = plt.figure(figsize=(10,10))
+  ax = fig.add_subplot(111)
+  # specifications of the plot
+  plt.xlabel('Input activities',fontsize=12)
+  plt.ylabel('Firing Rates (Hz)',fontsize=12)
+  shuffleStr = "shuffled inputs" if shuffled else "non-shuffled inputs"
+  revStr = "channels reversed" if reversedChans else ""
+  plt.title('2-channels action selection competition FR\n#%d means (over %d trials with %s)\n[ratio=%.3f simuTime=%dms %s]\n\n' % (model,nbTrials,shuffleStr,ratio,simuTime,revStr),fontsize=10)
+  #legend
+  p2 = Rectangle((0, 0), 1, 1, fc=cols[1])
+  p3 = Rectangle((0, 0), 1, 1, fc=cols[2])
+  plt.legend([p2,p3], ["Channel 1", "Channel 2"],bbox_to_anchor=(1.1, 1.),fontsize='x-small')
+  chan1vals = []
+  chan2vals = []
+  getValChan1 = lambda x : x[1]
+  getValChan2 = lambda x : x[2]
+  # plotting the point one by one
+  for key,dicVal in frtrials_dict.items() :
+    # dicVal is a list of tuples (step,FR1,FR2,choosen channel)
+    vals1 = map(getValChan1,dicVal)
+    vals2 = map(getValChan2,dicVal)
+    chan1vals.append(vals1)
+    chan2vals.append(vals2)
+  
+  # drawing channel 1
+  draw_boxplot(ax,chan1vals,cols[1])
+  # drawing channel 2
+  draw_boxplot(ax,chan2vals,cols[2])
+
+  actLevelStr = map(lambda x : "("+str(x[0])+",\n"+str(x[1])+")",actLevels)
+  ax.set_xticklabels(actLevelStr,fontsize=7)
+  plt.grid()
+  
+  # if the filename is not defined in save variable
+  if save is None:
+    print "\tShowing plot"
+    plt.show()
+  else :
+    print "\tPlot saved under the name %s" % save
+    fig.savefig(save)
+    
+#plot_errorFR_by_activity([(0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.0, 0.5)],{(0.0, 0.0): [(0, 70.0, 65.238095238095241, '0'), (2, 73.571428571428569, 67.857142857142847, '0'), (4, 65.714285714285708, 63.095238095238095, '0'), (6, 63.095238095238095, 70.238095238095241, '0'), (8, 70.0, 68.095238095238102, '0')], (0.0, 0.5): [(1, 90.0, 10.0, '2'), (3, 89.761904761904759, 6.9047619047619051, '2'), (5, 84.285714285714278, 13.80952380952381, '2'), (7, 86.904761904761898, 11.428571428571429, '2'), (9, 93.095238095238088, 5.0, '2')]},9,1.5,False,5,300,False,None)
 #plot_multichan_pieChart(np.arange(0,1.1,0.1),{(0.1,0.7):(0,10,90),(0.,0):(0,50,50),(0.6,0.5):(10,60,30)})
 
 
@@ -747,3 +836,4 @@ plot_inDegrees_boarders_table(table,'0')
 
 #plot_models_ranges({0: ['#0 , MSN=OK , FSI=NO[+4.8340] , STN=OK , GPe=OK , GPi=NO[+6.6000] , ']},["'GMSN':5.7", "'GFSI':1.3", "'GSTN':1.38", "'GGPe':1.3", "'IeGPe':13.", "'GGPi':1.", "'IeGPi':11."],models=[0])
 
+#plot_fr_by_time([0,1],[[ 69.01785714 , 24.82142857],[ 71.25       , 19.82142857]],['0', '0'], [[0.0,0.0],[0.5,0.5]],9,1.5,False,1,None)

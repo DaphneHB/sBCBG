@@ -818,14 +818,14 @@ def checkGurneyTestGeneric(trials_dico,ratio=1.5,shuffled=True,xytab=np.arange(0
 # PActiveCNS/PTN : proportion of "active" neurons in the CSN/PTN populations (in [0.,1.])
 #
 #-----------------------------------------------------------------------
-def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag='',reversing=False,simuTime=800,sameVal=None,constantChan=None,rezero=False):
+def checkGurneyTestGenericReZero(trials_dico,ratio=1.5,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
   nest.ResetKernel()
   dataPath='log/'
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
   initNeurons()
 
   offsetDuration = 200.
-  simDuration = simuTime # ms
+  simDuration = 800. # ms
   loadLG14params(params['LG14modelID'])
 
   # VARIABLES :
@@ -857,11 +857,8 @@ def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.
   #-------------------------  
   gCSN = CSNFR[1]-CSNFR[0]
   gPTN = PTNFR[1]-PTNFR[0]
-  
   activityLevels1 = list()
   activityLevels2 = list()
-  if xytab[0] != 0. :
-    xytab.insert(0,0.) # inserting 0. value at index 0
   xytab = map(lambda x : round(x,1),list(xytab))
   for x in xytab :
     # to associate every nb with every nb
@@ -875,80 +872,60 @@ def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.
     activityLevels = zip(*zipper)
   else :
     activityLevels = ([activityLevels1,activityLevels2]) # for both channels
-  # to generate always the same tuple of activity for chan1 and 2 during length time as : sameVal=None or (chan1 activity,chan2 activity,length)
-  if not sameVal is None :
-    activityLevels[0] = [sameVal[0]] * sameVal[2]
-    activityLevels[1] = [sameVal[1]] * sameVal[2]
-  # to generate always one channel constant as constantChan=None or (chan nb,chan activity)
-  if not constantChan is None :
-    if sameVal :
-      activityLevels[constantChan[0]] = [constantChan[1]] * sameVal[2]
-    else :
-      activityLevels[constantChan[0]] = [constantChan[1]] * len(xytab)
-      # the other chan is a simple xytab
-      activityLevels[((constantChan[0]+1)%2)] = xytab
 
-  nbTimes = len(activityLevels[0])
-  # for generating a rest state, a (0,0) Cortical input
-  if rezero :
-    nbTimes *= 2
-    # inserting 0.,0.
-    actLevs = []
-    for i in range(nbTimes) :
-      if i%2==1 :
-        actLevs.append((activityLevels[0][i/2],activityLevels[1][i/2]))
-      else :
-        actLevs.append((0.,0.))
-    activityLevels = zip(*actLevs)
-    
-  activityLevels = np.array(activityLevels)
+  # inserting 0.,0.
+  nbTimes = len(activityLevels[0]) * 2
+  actLevs = []
+  for i in range(nbTimes) :
+    if i%2==1 :
+      actLevs.append((activityLevels[0][i/2],activityLevels[1][i/2]))
+    else :
+      actLevs.append((0.,0.))
+  activityLevels = np.array(zip(*actLevs))
+  
   CSNrate= gCSN * activityLevels + np.ones((nbTimes)) * CSNFR[0]
   PTNrate= gPTN * activityLevels + np.ones((nbTimes)) * PTNFR[0]
   #-------------------------
   # and prepare the lists of neurons that will be affected by these activity changes
   #-------------------------
-  chanRange = range(2)
-  if reversing :
-    chanRange = reversed(chanRange)
   ActPop = {'CSN':[(),()],'PTN':[(),()]}
   if 'Fake' in globals():
     if 'CSN' in Fake:
       if PActiveCSN==1.:
        ActPop['CSN']=Fake['CSN']
       else:
-        for i in chanRange:
+        for i in range(2):
           ActPop['CSN'][i] = tuple(rnd.choice(a=np.array(Fake['CSN'][i]),size=int(nbSim['CSN']*PActiveCSN),replace=False))
     else:
       if PActiveCSN==1.:
        ActPop['CSN']=Pop['CSN']
       else:
-        for i in chanRange:
+        for i in range(2):
           ActPop['CSN'][i] = tuple(rnd.choice(a=np.array(Pop['CSN'][i]),size=int(nbSim['CSN']*PActiveCSN),replace=False))
     if 'PTN' in Fake:
       if PActivePTN==1.:
         ActPop['PTN']=Fake['PTN']
       else:
-        for i in chanRange:
+        for i in range(2):
           ActPop['PTN'][i] = tuple(rnd.choice(a=np.array(Fake['PTN'][i]),size=int(nbSim['PTN']*PActivePTN),replace=False))
     else:
       if PActivePTN==1.:
         ActPop['PTN']=Pop['PTN']
       else:
-        for i in chanRange :
+        for i in range(2):
           ActPop['PTN'][i] = tuple(rnd.choice(a=np.array(Pop['PTN'][i]),size=int(nbSim['PTN']*PActivePTN),replace=False))
   else:
     if PActiveCSN==1.:
      ActPop['CSN']=Pop['CSN']
     else:
-      for i in chanRange:
+      for i in range(2):
         ActPop['CSN'][i] = tuple(rnd.choice(a=np.array(Pop['CSN'][i]),size=int(nbSim['CSN']*PActiveCSN),replace=False))
     if PActivePTN==1.:
       ActPop['PTN']=Pop['PTN']
     else:
-      for i in chanRange :
+      for i in range(2):
         ActPop['PTN'][i] = tuple(rnd.choice(a=np.array(Pop['PTN'][i]),size=int(nbSim['PTN']*PActivePTN),replace=False))
 
- 
   #-------------------------
   # log-related variables
   #-------------------------
@@ -1079,10 +1056,10 @@ def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.
     print "--------------------"
     selected.append(choosenChannel)
     
-    if frtrials_dico.has_key(key) :
-      frtrials_dico[key].append((timeStep,expeRate['GPi'][0,timeStep],expeRate['GPi'][1,timeStep],choosenChannel))
+    if trials_dico.has_key(key) :
+      trials_dico[key].append(choosenChannel)
     else :
-      frtrials_dico[key] = [(timeStep,expeRate['GPi'][0,timeStep],expeRate['GPi'][1,timeStep],choosenChannel)]
+      trials_dico[key] = [choosenChannel]
       
     # write measured firing rates in csv file
     #frstr+='\n'
@@ -1102,14 +1079,21 @@ def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.
 
   firingRatesFile.close()
   
-  return steps,expeRate['GPi'],selected,activityLevels,frtrials_dico
+  print "chan 1 FR", expeRate['GPi'][0]
+  print
+  print "chan 2 FR",expeRate['GPi'][1]
+  print
+  print "selected = ",selected
+  print
+  print "steps = ",steps
+  
+  return steps,expeRate['GPi'],selected,activityLevels
 
 #-----------------------------------------------------------------------
 # PActiveCNS/PTN : proportion of "active" neurons in the CSN/PTN populations (in [0.,1.])
 #
 #-----------------------------------------------------------------------
-# TODO To combine with the previous one and remove
-def checkGurneyTestGenericZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
+def checkGurneyTestGenericZero(trials_dico,ratio=1.5,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
   nest.ResetKernel()
   dataPath='log/'
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
@@ -1359,10 +1343,10 @@ def checkGurneyTestGenericZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.ar
     print "--------------------"
     selected.append(choosenChannel)
     
-    if frtrials_dico.has_key(key) :
-      frtrials_dico[key].append((expeRate['GPi'][0,timeStep],expeRate['GPi'][1,timeStep]))
+    if trials_dico.has_key(key) :
+      trials_dico[key].append(choosenChannel)
     else :
-      frtrials_dico[key] = [(expeRate['GPi'][0,timeStep],expeRate['GPi'][1,timeStep])]
+      trials_dico[key] = [choosenChannel]
       
     # write measured firing rates in csv file
     #frstr+='\n'
@@ -1382,7 +1366,15 @@ def checkGurneyTestGenericZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.ar
 
   firingRatesFile.close()
   
-  return steps,expeRate['GPi'],selected,activityLevels,frtrials_dico
+  print "chan 1 FR", expeRate['GPi'][0]
+  print
+  print "chan 2 FR",expeRate['GPi'][1]
+  print
+  print "selected = ",selected
+  print
+  print "steps = ",steps
+  
+  return steps,expeRate['GPi'],selected,activityLevels
 
 #-----------------------------------------------------------------------
 def main():
