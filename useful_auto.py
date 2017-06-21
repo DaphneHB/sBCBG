@@ -442,7 +442,7 @@ Arguments :
 - NbTrials is the number of trials (1 trial = len(values)^2 simulations)
 - pathToData is to know where to save the file
 '''
-def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False) :
+def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),simuTime=800,shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False) :
   
   execTime = time.localtime()
   currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
@@ -459,11 +459,11 @@ def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=
       os.system("rm -fr log/*")
       print "############################## TRIAL no. %d ###########################" % trial
       # launch GurneyTestsgeneric
-      xytab,this_trial = checkGurneyTestGeneric(trials_dico,xytab=xytab,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=False,params=params,PActiveCSN=0.2,PActivePTN=0.2)
+      xytab,this_trial = checkGurneyTestGeneric(trials_dico,xytab=xytab,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=False,params=params,PActiveCSN=0.2,PActivePTN=0.2,simuTime=simuTime)
       trials_dico.update(this_trial)
     if filename is None :
       filename = currtime + "dualchanCompetition.csv"
-    io.write_2chan_chanChoicefile(xytab,trials_dico,ratioChan1Chan2,shuffled,filename,pathToFile=pathToData,model=model)
+    io.write_2chan_chanChoicefile(xytab,trials_dico,ratioChan1Chan2,shuffled,filename,simuTime,pathToFile=pathToData,model=model)
   else :
     xytab,trials_dico = io.read_2chan_file(filename,pathToFile=pathToData,model=model)
     print "\n.... Value's array = ",xytab
@@ -476,40 +476,82 @@ def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=
   pltT.plot_multichan_pieChart(xytab,trials_dico,model,ratioChan1Chan2,NbTrials,shuffled,save=savename)
     
 
-def generate_GurneyTestZero(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False,rezero=False,rev=False,simuTime=800,sameVal=None,constantChan=None) :
-  
-  execTime = time.localtime()
-  currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
-  
-  frtrials_dico = {}
-  xytab = values
+def generate_GurneyTestZero(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False,rezero=False,rev=False,simuTime=800,sameVal=None,constantChan=None,seeds=[17], seedAvg=True) :
   if not model is None :
     params['LG14modelID'] = model
     switch_model(model)
   else :
     model = params['LG14modelID']
-  for trial in range(NbTrials) :
-    os.system("rm -fr log/*")
-    print "############################## TRIAL no. %d ###########################" % trial
-    # launch GurneyTestsgeneric
-    if rezero :
-      print "\tWith return to ZERO by regenerating (0.,0.) !"
-    else :
-      print "\tWith return to ZERO by saving the (0.,0.) state !"
-    steps,frates,selections,activities,frtrials_dico = checkGurneyTestGenericReZero(frtrials_dico,xytab=xytab,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=False,params=params,PActiveCSN=0.2,PActivePTN=0.2,reversing=rev,simuTime=simuTime,sameVal=sameVal,constantChan=constantChan,rezero=rezero)
-  if filename is None :
-    filename = currtime + "rezero2ChansCompetition.csv"
-  # saving all the data in one file
-  io.write_2chan_franalyzeFile(values,frtrials_dico,ratioChan1Chan2,shuffled,NbTrials,filename,pathToFile=pathToData, model=model,rezero=rezero,reversedChans=rev)
+  # where seedFR_dict is as {seed : [[list of FR1s],[list of FR2s]]}
+  seedFR_dict = {}
+  for sd in seeds :
+    frtrials_dico = {}
+    xytab = values
+    execTime = time.localtime()
+    currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
+    rnd.seed(sd)
+    for trial in range(NbTrials) :
+      os.system("rm -fr log/*")
+      print "############################## TRIAL no. %d ###########################" % trial
+      # launch GurneyTestsgeneric
+      if rezero :
+        print "\tWith return to ZERO by regenerating (0.,0.) !"
+      else :
+        print "\tWith return to ZERO by saving the (0.,0.) state !"
+      steps,frates,selections,activities,frtrials_dico = checkGurneyTestGenericReZero(frtrials_dico,xytab=xytab,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=False,params=params,PActiveCSN=0.2,PActivePTN=0.2,reversing=rev,simuTime=simuTime,sameVal=sameVal,constantChan=constantChan,rezero=rezero)
+      seedFR_dict[sd] = frates
+    if filename is None :
+      filename = currtime + "rezero2ChansCompetition.csv"
+    # saving all the data in one file
+    io.write_2chan_franalyzeFile(values,frtrials_dico,ratioChan1Chan2,shuffled,NbTrials,filename,simuTime,seed=sd,pathToFile=pathToData,model=model,rezero=rezero,reversedChans=rev)
+        
+    savename1 = None
+    savename2 = None
+    if save :
+      rev = "ChanReversed" if rev else ""
+      savename1 = "plots/" + currtime + "gurneyTestFRbyStep(" + str(ratioChan1Chan2) + ")#" + str(model) + rev + "simu" + str(simuTime) + "ms.png"
+      savename2 = "plots/" + currtime + "gurneyTestAvgbyActivity(" + str(ratioChan1Chan2) + ")#" + str(model) + rev + "simu" + str(simuTime) + "ms.png"
+    pltT.plot_fr_by_time(steps,seedFR_dict,selections,zip(*activities),model,ratioChan1Chan2,shuffled,NbTrials,simuTime,seeds=[sd],reversedChans=rev,save=savename1)
+    pltT.plot_errorFR_by_activity(zip(*activities),frtrials_dico,model,ratioChan1Chan2,shuffled,NbTrials,simuTime,seed=sd,reversedChans=rev,save=savename2)
+  # if we also want to generate averaging all the fr with different seeds
+  if seedAvg :
+    if save :
+      rev = "ChanReversed" if rev else ""
+      savename1 = "plots/" + currtime + "gurneyTestFRbyStepSeedAvg(" + str(ratioChan1Chan2) + ")#" + str(model) + rev + "simu" + str(simuTime) + "ms.png"
+      savename2 = "plots/" + currtime + "gurneyTestAvgbyActivitySeeAvg(" + str(ratioChan1Chan2) + ")#" + str(model) + rev + "simu" + str(simuTime) + "ms.png"
+    pltT.plot_fr_by_time(steps,seedFR_dict,selections,zip(*activities),model,ratioChan1Chan2,shuffled,NbTrials,simuTime,seeds=seeds,reversedChans=rev,save=savename1)
+    
+
+def one_chan_simu(offTime=1000,simuTime=5000,xytab=None,model=None,seeds=[17],nbtrials=1,save=False) :
+  if not model is None :
+    params['LG14modelID'] = model
+    switch_model(model)
+  else :
+    model = params['LG14modelID']
+  GPi_outputs = dict.fromkeys(range(nbtrials),list())
+  seedFR_dict = dict.fromkeys(seeds)
+  for sd in seeds :
+    execTime = time.localtime()
+    currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
+    os.system("rm -rf log/*")
+    rnd.seed(sd)
+    GPi_outputs = checkAvgFR_MC(offTime=offTime,simuTime=simuTime,ctx_activity=xytab,out=GPi_outputs,NbTrials=nbtrials,params=params,antagInjectionSite='none',antag='',showRasters=True)
+    seedFR_dict[sd] = GPi_outputs
+    if not xytab is None :
+      savename1 = None
+      if save :
+        rev = "ChanReversed" if rev else ""
+        savename1 = "plots/" + currtime + "oneChanMCtestFRbyStep#" + str(model) + "simu" + str(simuTime) + "offset" + str(offTime) + "ms.png"
+      pltT.plot_fr_for1(FRRNormal['GPi'],seedFR_dict,xytab,model,offTime,simuTime,seeds,save=savename)
       
-  savename = None
-  if save :
-    rev = "ChanReversed" if rev else ""
-    savename = "plots/" + currtime + "gurneyTestFRbyStep(" + str(ratioChan1Chan2) + ")#" + str(model) + rev + "simu" + str(simuTime) + "ms.png"
-  pltT.plot_fr_by_time(steps,frates,selections,zip(*activities),model,ratioChan1Chan2,shuffled,NbTrials,simuTime,reversedChans=rev,save=savename)
-  pltT.plot_errorFR_by_activity(zip(*activities),frtrials_dico,model,ratioChan1Chan2,shuffled,NbTrials,simuTime,reversedChans=rev,save=savename)
-
-
+  if not xytab is None :
+    savename1 = None
+    if save :
+      rev = "ChanReversed" if rev else ""
+      savename1 = "plots/" + currtime + "oneChanMCtestFRbyStepGlob#" + str(model) + "simu" + str(simuTime) + "offset" + str(offTime) + "ms.png"
+    pltT.plot_fr_for1(FRRNormal['GPi'],seedFR_dict,xytab,model,offTime,simuTime,seeds,save=savename)
+  
+  
 def launch_SangoGurney() :
   ratio = gurneyParams['chanRatio']
   saving = gurneyParams['toSave']
@@ -577,11 +619,12 @@ def main() :
   #generate_GurneyTest(generate=True,NbTrials=1,ratioChan1Chan2=1.5,values=[0.,1.,1.1],save=False)
   
   
-  generate_GurneyTestZero(generate=True,NbTrials=15,ratioChan1Chan2=1.5,shuffled=False,save=True,rezero=True,simuTime=1000,rev=False,sameVal=(0.3,0.5,50),constantChan=(0,0.),model=9)
+  #generate_GurneyTestZero(generate=True,NbTrials=1,ratioChan1Chan2=1.5,shuffled=False,save=True,rezero=False,simuTime=1000,rev=False,sameVal=(0.,0.,50),constantChan=None,model=9,seeds=np.arange(1,32,1))
   #generate_GurneyTestZero(generate=True,NbTrials=5,ratioChan1Chan2=1.5,shuffled=False,save=True,rezero=True,simuTime=10000,rev=True)
   ######## test on Sango
   #launch_SangoGurney()
-
+  
+  one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50))
 
 if __name__ == '__main__' :
   main()

@@ -209,12 +209,12 @@ X ; Y ; 0, 1 or 2 (choosen channel); 0, 1 or 2; 0, 1 or 2 .... [as much as the n
 [100 values - 10x * 10y]
 
 '''
-def write_2chan_chanChoicefile(xytab,trials_dico,ratio,shuffled,filename,pathToFile=os.getcwd(), model=0) :
+def write_2chan_chanChoicefile(xytab,trials_dico,ratio,shuffled,filename,simuTime,pathToFile=os.getcwd(),model=0) :
   print "------------- Saving data -----------"
   # retrieving the string for the xytab values
   xytext = ";".join(map(str,xytab))
   # first writting the model and the antag
-  textToWrite = "#%d\nratio=%.3f\nshuffled=%s\n%s\n\n" % (model,ratio,shuffled,xytext)
+  textToWrite = "#%d\nratio=%.3f\nSimuDuration=%s\nshuffled=%s\n%s\n\n" % (model,ratio,simuTime,shuffled,xytext)
   directory = os.path.join(pathToFile,"data/files/")
   # writing every trails for each (x.y) tuple
   for keys,values in trials_dico.items() :
@@ -254,12 +254,12 @@ X ; Y ; 0, 1 or 2 (choosen channel); 0, 1 or 2; 0, 1 or 2 .... [as much as the n
 [100 values - 10x * 10y]
 
 '''
-def write_2chan_franalyzeFile(xytab,frTrials_dico,ratio,shuffled,nbTrials,filename,pathToFile=os.getcwd(), model=None,rezero=False,reversedChans=False) :
+def write_2chan_franalyzeFile(xytab,frTrials_dico,ratio,shuffled,nbTrials,filename,simuTime,seed,pathToFile=os.getcwd(), model=None,rezero=False,reversedChans=False) :
   print "------------- Saving data -----------"
   # retrieving the string for the xytab values
   xytext = ";".join(map(str,xytab))
   # first writting the model and the antag
-  textToWrite = "#%d\nratio=%.3f\nshuffled=%s\nNbTrials=%d\nReZero=%s\nReversedChannels=%s\n\n%s\n\n" % (model,ratio,shuffled,nbTrials,rezero,reversedChans,xytext)
+  textToWrite = "#%d\nratio=%.3f\nseed=%d\nSimuDuration=%s\nshuffled=%s\nNbTrials=%d\nReZero=%s\nReversedChannels=%s\n\n%s\n\n" % (model,ratio,seed,simuTime,shuffled,nbTrials,rezero,reversedChans,xytext)
   directory = os.path.join(pathToFile,"data/files/")
   # writing every trails for each (x.y) tuple
   for keys,values in frTrials_dico.items() :

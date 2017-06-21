@@ -163,14 +163,14 @@ def connectBG_MC(antagInjectionSite,antag):
 # - G{MSN,FSI,STN,GPi,GPe} : gain to be applied on LG14 input synaptic weights for each population
 #------------------------------------------
 
-def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',logFileName=''):
+def checkAvgFR_MC(out=dict(),NbTrials=1,ctx_activity=None,showRasters=False,params={},antagInjectionSite='none',antag='',logFileName='',CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1.,offTime=1000,simuTime=5000):
   nest.ResetKernel()
   dataPath='log/'
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
   initNeurons()
 
-  offsetDuration = 1000.
-  simDuration = 5000. # ms
+  offsetDuration = float(offTime)
+  simDuration = float(simuTime) # ms
   # nest.SetKernelStatus({"overwrite_files":True}) # Thanks to use of timestamps, file names should now 
                                                    # be different as long as they are not created during the same second
 
@@ -180,8 +180,8 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
   # We check that all the necessary parameters have been defined. They should be in the modelParams.py file.
   # If one of them misses, we exit the program.
   necessaryParams=['nbCh','nbMSN','nbFSI','nbSTN','nbGPe','nbGPi','nbCSN','nbPTN','nbCMPf','IeGPe','IeGPi','GMSN','GFSI','GSTN','GGPe','GGPi','inDegCSNMSN','inDegPTNMSN','inDegCMPfMSN','inDegMSNMSN','inDegFSIMSN','inDegSTNMSN','inDegGPeMSN','inDegCSNFSI','inDegPTNFSI','inDegSTNFSI','inDegGPeFSI','inDegCMPfFSI','inDegFSIFSI','inDegPTNSTN','inDegCMPfSTN','inDegGPeSTN','inDegCMPfGPe','inDegSTNGPe','inDegMSNGPe','inDegGPeGPe','inDegMSNGPi','inDegSTNGPi','inDegGPeGPi','inDegCMPfGPi',]
-  for np in necessaryParams:
-    if np not in params:
+  for nprm in necessaryParams:
+    if nprm not in params:
       print "Missing parameter:",np 
       exit()
 
@@ -189,93 +189,161 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
   # creation and connection of the neural populations
   #-------------------------
   createBG_MC()
-
   connectBG_MC(antagInjectionSite,antag)
-
-  #-------------------------
-  # measures
-  #-------------------------
-  spkDetect={} # spike detectors used to record the experiment
-  expeRate={}
-
-  antagStr = ''
-  if antagInjectionSite != 'none':
-    antagStr = antagInjectionSite+'_'+antag+'_'
-
-  for N in NUCLEI:
-    # 1000ms offset period for network stabilization
-    spkDetect[N] = nest.Create("spike_detector", params={"withgid": True, "withtime": True, "label": antagStr+N, "to_file": True, 'start':offsetDuration,'stop':offsetDuration+simDuration})
-    for i in range(len(Pop[N])):
-      nest.Connect(Pop[N][i], spkDetect[N])
-
-  #-------------------------
-  # Simulation
-  #-------------------------
-  nest.Simulate(simDuration+offsetDuration)
-
+  
+  if not ctx_activity is None :
+    print "Multi-trial test"
+    # ctx input activities
+     #-------------------------
+    # prepare the firing rates of the inputs for the 5 steps of the experiment
+    #-------------------------  
+    
+    gCSN = CSNFR[1]-CSNFR[0]
+    gPTN = PTNFR[1]-PTNFR[0]
+    
+    actLevels = np.array([ctx_activity])
+    NbTrials = len(ctx_activity)
+    CSNrate= gCSN * actLevels + np.ones((NbTrials)) * CSNFR[0]
+    PTNrate= gPTN * actLevels + np.ones((NbTrials)) * PTNFR[0]
+    
+    #-------------------------
+    # and prepare the lists of neurons that will be affected by these activity changes
+    #-------------------------
+    ActPop = {'CSN':[()],'PTN':[()]}
+    if 'Fake' in globals():
+      if 'CSN' in Fake:
+        if PActiveCSN==1.:
+         ActPop['CSN']=Fake['CSN']
+        else:
+          for i in chanRange:
+            ActPop['CSN'][0] = tuple(rnd.choice(a=np.array(Fake['CSN'][0]),size=int(nbSim['CSN']*PActiveCSN),replace=False))
+      else:
+        if PActiveCSN==1.:
+         ActPop['CSN']=Pop['CSN']
+        else:
+          for i in chanRange:
+            ActPop['CSN'][0] = tuple(rnd.choice(a=np.array(Pop['CSN'][0]),size=int(nbSim['CSN']*PActiveCSN),replace=False))
+      if 'PTN' in Fake:
+        if PActivePTN==1.:
+          ActPop['PTN']=Fake['PTN']
+        else:
+          for i in chanRange:
+            ActPop['PTN'][0] = tuple(rnd.choice(a=np.array(Fake['PTN'][0]),size=int(nbSim['PTN']*PActivePTN),replace=False))
+      else:
+        if PActivePTN==1.:
+          ActPop['PTN']=Pop['PTN']
+        else:
+          for i in chanRange :
+            ActPop['PTN'][0] = tuple(rnd.choice(a=np.array(Pop['PTN'][0]),size=int(nbSim['PTN']*PActivePTN),replace=False))
+    else:
+      if PActiveCSN==1.:
+       ActPop['CSN']=Pop['CSN']
+      else:
+        for i in chanRange:
+          ActPop['CSN'][0] = tuple(rnd.choice(a=np.array(Pop['CSN'][0]),size=int(nbSim['CSN']*PActiveCSN),replace=False))
+      if PActivePTN==1.:
+        ActPop['PTN']=Pop['PTN']
+      else:
+        for i in chanRange :
+          ActPop['PTN'][0] = tuple(rnd.choice(a=np.array(Pop['PTN'][0]),size=int(nbSim['PTN']*PActivePTN),replace=False))
+  else :
+    NbTrials = 1
+  
   score = 0
 
   text=[]
-  frstr = "#" + str(params['LG14modelID'])+ " , " + antagInjectionSite + ', '
-  s = '----- RESULTS -----'
-  print s
-  text.append(s+'\n')
-  if antagInjectionSite == 'none':
-    validationStr = "\n#" + str(params['LG14modelID']) + " , "
-    frstr += "none , "
+  frstr = "#" + str(params['LG14modelID'])+ " , " + antagInjectionSite + ','
+  for trial in range(NbTrials) :
+    #-------------------------
+    # measures
+    #-------------------------
+    spkDetect={} # spike detectors used to record the experiment
+    expeRate={}
+  
+    antagStr = ''
+    if antagInjectionSite != 'none':
+      antagStr = antagInjectionSite+'_'+antag+'_'
+  
     for N in NUCLEI:
-      strTestPassed = 'NO!'
-      expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*simDuration*params['nbCh']) * 1000
-      if expeRate[N] <= FRRNormal[N][1] and expeRate[N] >= FRRNormal[N][0]:
-        # if the measured rate is within acceptable values
-        strTestPassed = 'OK'
-        score += 1
-        validationStr += N + "=OK , "
-      else : 
-      # out of the ranges
-        if expeRate[N] > FRRNormal[N][1] :
-          difference = expeRate[N] - FRRNormal[N][1]
-          validationStr += N + "=+%.2f , " % difference
-        else :
-          difference = expeRate[N] - FRRNormal[N][0]
-          validationStr += N + "=%.2f , " % difference
-      frstr += '%f , ' %(expeRate[N])
-      s = '* '+N+' - Rate: '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRNormal[N][0])+' , '+str(FRRNormal[N][1])+')'
-      print s
-      text.append(s+'\n')
-  else:
-    validationStr = ""
-    frstr += str(antag) + " , "
-    for N in NUCLEI:
-      expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*simDuration*params['nbCh']) * 1000
-      if N == antagInjectionSite:
+      # 1000ms offset period for network stabilization
+      spkDetect[N] = nest.Create("spike_detector", params={"withgid": True, "withtime": True, "label": antagStr+N, "to_file": False, 'start':offsetDuration + trial*(offsetDuration+simDuration),'stop':(trial+1)*(offsetDuration+simDuration)})
+      for i in range(len(Pop[N])):
+        nest.Connect(Pop[N][i], spkDetect[N])
+  
+    #-------------------------
+    # Simulation
+    #-------------------------
+    if not ctx_activity is None :
+      print '====== Step',trial,'======'
+      print 'Channel 0:',CSNrate[0,trial],PTNrate[0,trial]
+      
+      nest.SetStatus(ActPop['CSN'][0],{'rate':CSNrate[0,trial]})
+      nest.SetStatus(ActPop['PTN'][0],{'rate':PTNrate[0,trial]})
+    nest.Simulate(simDuration+offsetDuration)
+  
+    s = '----- RESULTS -----'
+    print s
+    text.append(s+'\n')
+    if antagInjectionSite == 'none':
+      validationStr = "\n#" + str(params['LG14modelID']) + " , "
+      frstr += "none , "
+      for N in NUCLEI:
         strTestPassed = 'NO!'
-        if expeRate[N] <= FRRAnt[N][antag][1] and expeRate[N] >= FRRAnt[N][antag][0]:
+        expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*simDuration*params['nbCh']) * 1000
+        if expeRate[N] <= FRRNormal[N][1] and expeRate[N] >= FRRNormal[N][0]:
           # if the measured rate is within acceptable values
           strTestPassed = 'OK'
           score += 1
-          validationStr += N + "_" + antag + "=OK , "
+          validationStr += N + "=OK , "
         else : 
         # out of the ranges
           if expeRate[N] > FRRNormal[N][1] :
             difference = expeRate[N] - FRRNormal[N][1]
-            validationStr += N + "_" + antag + "=+%.2f , " % difference
+            validationStr += N + "=+%.2f , " % difference
           else :
             difference = expeRate[N] - FRRNormal[N][0]
-            validationStr += N + "_" + antag + "=%.2f , " % difference
-        
-        s = '* '+N+' with '+antag+' antagonist(s): '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRAnt[N][antag][0])+' , '+str(FRRAnt[N][antag][1])+')'
+            validationStr += N + "=%.2f , " % difference
+        frstr += '%f , ' %(expeRate[N])
+        s = '* '+N+' - Rate: '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRNormal[N][0])+' , '+str(FRRNormal[N][1])+')'
         print s
         text.append(s+'\n')
-      else:
-        s = '* '+N+' - Rate: '+str(expeRate[N])+' Hz'
-        print s
-        text.append(s+'\n')
-      frstr += '%f , ' %(expeRate[N])
+    else:
+      validationStr = ""
+      frstr += str(antag) + " , "
+      for N in NUCLEI:
+        expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*simDuration*params['nbCh']) * 1000
+        if N == antagInjectionSite:
+          strTestPassed = 'NO!'
+          if expeRate[N] <= FRRAnt[N][antag][1] and expeRate[N] >= FRRAnt[N][antag][0]:
+            # if the measured rate is within acceptable values
+            strTestPassed = 'OK'
+            score += 1
+            validationStr += N + "_" + antag + "=OK , "
+          else : 
+          # out of the ranges
+            if expeRate[N] > FRRNormal[N][1] :
+              difference = expeRate[N] - FRRNormal[N][1]
+              validationStr += N + "_" + antag + "=+%.2f , " % difference
+            else :
+              difference = expeRate[N] - FRRNormal[N][0]
+              validationStr += N + "_" + antag + "=%.2f , " % difference
+          
+          s = '* '+N+' with '+antag+' antagonist(s): '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRAnt[N][antag][0])+' , '+str(FRRAnt[N][antag][1])+')'
+          print s
+          text.append(s+'\n')
+        else:
+          s = '* '+N+' - Rate: '+str(expeRate[N])+' Hz'
+          print s
+          text.append(s+'\n')
+        frstr += '%f , ' %(expeRate[N])
+  
+    out[trial] = expeRate['GPi']
+  
+    s = '-------------------'
+    print s
+    text.append(s+'\n')
+    os.system("rm -f log/*.gdf")
 
-  s = '-------------------'
-  print s
-  text.append(s+'\n')
 
   frstr+='\n'
   firingRatesFile=open(dataPath+'firingRates.csv','a')
@@ -302,7 +370,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
 
     nest.raster_plot.show()
 
-  return score, 5 if antagInjectionSite == 'none' else 1
+  return (score, 5 if antagInjectionSite == 'none' else 1),out
 
 #-----------------------------------------------------------------------
 # PActiveCNS/PTN : proportion of "active" neurons in the CSN/PTN populations (in [0.,1.])
@@ -536,14 +604,14 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
 # PActiveCNS/PTN : proportion of "active" neurons in the CSN/PTN populations (in [0.,1.])
 #
 #-----------------------------------------------------------------------
-def checkGurneyTestGeneric(trials_dico,ratio=1.5,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
+def checkGurneyTestGeneric(trials_dico,ratio=1.5,simuTime=800,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
   nest.ResetKernel()
   dataPath='log/'
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
   initNeurons()
 
   offsetDuration = 200.
-  simDuration = 800. # ms
+  simDuration = float(simuTime) # ms
   loadLG14params(params['LG14modelID'])
 
   # We check that all the necessary parameters have been defined. They should be in the modelParams.py file.
@@ -825,7 +893,9 @@ def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.
   initNeurons()
 
   offsetDuration = 200.
-  simDuration = simuTime # ms
+  simDuration = float(simuTime) # ms
+  
+  print '/!\ Using the following LG14 parameterization',params['LG14modelID']
   loadLG14params(params['LG14modelID'])
 
   # VARIABLES :
@@ -860,8 +930,6 @@ def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.
   
   activityLevels1 = list()
   activityLevels2 = list()
-  if xytab[0] != 0. :
-    xytab.insert(0,0.) # inserting 0. value at index 0
   xytab = map(lambda x : round(x,1),list(xytab))
   for x in xytab :
     # to associate every nb with every nb
@@ -870,7 +938,7 @@ def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.
   
   if shuffled :
     # keeping 0,0 as the first test and shuffling the rest
-    zipper = zip(activityLevels1,activityLevels2)
+    zipper = zip(activityLevels1[1:],activityLevels2[1:])
     rnd.shuffle(zipper) # to have it with a random seed : rnd.shuffle(zipper,rnd.random)
     activityLevels = zip(*zipper)
   else :
@@ -888,6 +956,9 @@ def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.
       # the other chan is a simple xytab
       activityLevels[((constantChan[0]+1)%2)] = xytab
 
+  if activityLevels[0][0]!=0. or activityLevels[1][0]!=0. :
+    activityLevels[0].insert(0,0.)
+    activityLevels[1].insert(0,0.)
   nbTimes = len(activityLevels[0])
   # for generating a rest state, a (0,0) Cortical input
   if rezero :
@@ -904,6 +975,7 @@ def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.
   activityLevels = np.array(activityLevels)
   CSNrate= gCSN * activityLevels + np.ones((nbTimes)) * CSNFR[0]
   PTNrate= gPTN * activityLevels + np.ones((nbTimes)) * PTNFR[0]
+  
   #-------------------------
   # and prepare the lists of neurons that will be affected by these activity changes
   #-------------------------
@@ -1447,17 +1519,18 @@ def main():
   os.system("rm -rf log/*")
   
   score = np.zeros((2))
+  
   '''
-  score += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=True)
-
+  score += checkAvgFR_MC(params=params,antagInjectionSite='none',antag='',showRasters=True)
+  
   for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
-    score += checkAvgFR(params=params,antagInjectionSite='GPe',antag=a)
+    score += checkAvgFR_MC(params=params,antagInjectionSite='GPe',antag=a)
 
   for a in ['All','AMPA','NMDA+AMPA','NMDA','GABAA']:
-    score += checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
+    score += checkAvgFR_MC(params=params,antagInjectionSite='GPi',antag=a)
   '''
 
-  score += checkGurneyTest(showRasters=True,params=params,PActiveCSN=0.2,PActivePTN=0.2)
+  #score += checkGurneyTest(showRasters=True,params=params,PActiveCSN=0.2,PActivePTN=0.2)
   #score += checkGurneyTest(showRasters=True,params=params,PActiveCSN=1.,PActivePTN=1.)
 
   #-------------------------

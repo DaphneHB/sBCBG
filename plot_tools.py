@@ -733,8 +733,8 @@ def plot_piechart(axes,percentages,colors) :
           shadow=False, startangle=90,colors=colors) #, autopct='%2d%%')
   axes.set_aspect('equal', adjustable='box')
   return axes
-
-def plot_fr_by_time(steps,firingRates,selected,actLevels,model,ratio,shuffled,nbTrials,simuTime,reversedChans,save=None) :
+  
+def plot_fr_by_time(steps,firingRates,selected,actLevels,model,ratio,shuffled,nbTrials,simuTime,reversedChans,seeds,save=None) :
   print "Plotting the 2-channels action selection competition for #%d" % model
   cols=["grey","blue","green","red"]
   fig = plt.figure(figsize=(10,10))
@@ -743,7 +743,8 @@ def plot_fr_by_time(steps,firingRates,selected,actLevels,model,ratio,shuffled,nb
   plt.ylabel('Firing Rates (Hz)',fontsize=12)
   shuffleStr = "shuffled inputs" if shuffled else "non-shuffled inputs"
   revStr = "channels reversed" if reversedChans else ""
-  plt.title('2-channels action selection competition FR\n#%d (over %d trials with %s)\n[ratio=%.3f simuTime=%dms %s]\n\n' % (model,nbTrials,shuffleStr,ratio,simuTime,revStr),fontsize=10)
+  seedStr = "seeds=[" + ",".join(map(str,seeds)) + "]"
+  plt.title('2-channels action selection competition FR\n#%d (over %d trials with %s)\n[ratio=%.3f %s simuTime=%dms %s]\n\n' % (model,nbTrials,shuffleStr,ratio,seedStr,simuTime,revStr),fontsize=10)
   plt.grid()
   plt.xticks(steps,fontsize=10)
   ax2 = plt.twiny()
@@ -758,8 +759,17 @@ def plot_fr_by_time(steps,firingRates,selected,actLevels,model,ratio,shuffled,nb
   p5 = mlines.Line2D(range(1), range(1), color="white",marker='o',markersize=8,markerfacecolor="black")
   plt.legend([p1,p2,p3,p4,p5], ["No selection","Channel 1", "Channel 2", "Error","Selected"],bbox_to_anchor=(1.1, 1.),fontsize='x-small')
   # plotting
-  plt.plot(steps,firingRates[0],color=cols[1])
-  plt.plot(steps,firingRates[1],color=cols[2])
+  avgFR1 = list()
+  avgFR2 = list()
+  for st in steps :
+    thisStep = [[],[]]
+    for sd in seeds :
+      thisStep[0].append(firingRates[sd][0][st])
+      thisStep[1].append(firingRates[sd][1][st])
+    avgFR1.append(np.mean(thisStep[0]))
+    avgFR2.append(np.mean(thisStep[1]))  
+  plt.plot(steps,avgFR1,color=cols[1])
+  plt.plot(steps,avgFR2,color=cols[2])
   for st,pt in zip(steps,selected) :
     plt.scatter([st],[0],s=500,c=cols[int(pt)],edgecolor='')
 
@@ -778,7 +788,7 @@ def draw_boxplot(ax,data, fill_color):
       patch.set(facecolor=fill_color)       
 
 
-def plot_errorFR_by_activity(actLevels,frtrials_dict,model,ratio,shuffled,nbTrials,simuTime,reversedChans,save=None) :
+def plot_errorFR_by_activity(actLevels,frtrials_dict,model,ratio,shuffled,nbTrials,simuTime,seed,reversedChans,save=None) :
   print "Plotting the 2-channels action selection competition for #%d" % model
   cols=["grey","blue","green","red"]
   fig = plt.figure(figsize=(10,10))
@@ -786,9 +796,6 @@ def plot_errorFR_by_activity(actLevels,frtrials_dict,model,ratio,shuffled,nbTria
   # specifications of the plot
   plt.xlabel('Input activities',fontsize=12)
   plt.ylabel('Firing Rates (Hz)',fontsize=12)
-  shuffleStr = "shuffled inputs" if shuffled else "non-shuffled inputs"
-  revStr = "channels reversed" if reversedChans else ""
-  plt.title('2-channels action selection competition FR\n#%d means (over %d trials with %s)\n[ratio=%.3f simuTime=%dms %s]\n\n' % (model,nbTrials,shuffleStr,ratio,simuTime,revStr),fontsize=10)
   #legend
   p2 = Rectangle((0, 0), 1, 1, fc=cols[1])
   p3 = Rectangle((0, 0), 1, 1, fc=cols[2])
@@ -797,6 +804,7 @@ def plot_errorFR_by_activity(actLevels,frtrials_dict,model,ratio,shuffled,nbTria
   chan2vals = []
   getValChan1 = lambda x : x[1]
   getValChan2 = lambda x : x[2]
+  nbStep = 0
   # plotting the point one by one
   for key,dicVal in frtrials_dict.items() :
     # dicVal is a list of tuples (step,FR1,FR2,choosen channel)
@@ -804,7 +812,7 @@ def plot_errorFR_by_activity(actLevels,frtrials_dict,model,ratio,shuffled,nbTria
     vals2 = map(getValChan2,dicVal)
     chan1vals.append(vals1)
     chan2vals.append(vals2)
-  
+    nbStep += 1
   # drawing channel 1
   draw_boxplot(ax,chan1vals,cols[1])
   # drawing channel 2
@@ -813,6 +821,9 @@ def plot_errorFR_by_activity(actLevels,frtrials_dict,model,ratio,shuffled,nbTria
   actLevelStr = map(lambda x : "("+str(x[0])+",\n"+str(x[1])+")",actLevels)
   ax.set_xticklabels(actLevelStr,fontsize=7)
   plt.grid()
+  shuffleStr = "shuffled inputs" if shuffled else "non-shuffled inputs"
+  revStr = "channels reversed" if reversedChans else ""
+  plt.title('2-channels action selection competition FR\n#%d means (%d simulations over %d trials with %s)\n[ratio=%.3f seed=%d simuTime=%dms %s]\n\n' % (model,nbStep,nbTrials,shuffleStr,ratio,seed,simuTime,revStr),fontsize=10)
   
   # if the filename is not defined in save variable
   if save is None:
@@ -822,6 +833,40 @@ def plot_errorFR_by_activity(actLevels,frtrials_dict,model,ratio,shuffled,nbTria
     print "\tPlot saved under the name %s" % save
     fig.savefig(save)
     
+def plot_fr_for1(GPi_limits,oneChanFR,actLevels,model,offsetTime,simuTime,seeds,save=None) :
+  print "Plotting the MC input activity test on 1 channel for #%d" % model
+  fig = plt.figure(figsize=(10,10))
+  # specifications of the plot
+  plt.xlabel('Time Steps',fontsize=12)
+  plt.ylabel('Firing Rates (Hz)',fontsize=12)
+  seedStr = "seeds=[" + ",".join(map(str,seeds)) + "]"
+  plt.title('1 channel FR analyze on MC plot\n#%d [%s offsetTime=%dms simuTime=%dms]\n\n' % (model,seedStr,offsetTime,simuTime),fontsize=10)
+  plt.grid()
+  actLevels = map(str,actLevels)
+  steps = range(len(oneChanFR[seeds[0]]))
+  plt.xticks(steps,fontsize=10)
+  #legend
+  p2 = Rectangle((0, 0), 1, 1, fc="blue")
+  p4 = Rectangle((0, 0), 1, 1, fc="red")
+  plt.legend([p2,p4], ["Channel 1","Gpi FR limits"],bbox_to_anchor=(1.1, 1.),fontsize='x-small')
+  # plotting
+  avgFR1 = list()
+  for st in steps :
+    thisStep = []
+    for sd in seeds :
+      thisStep.append(oneChanFR[sd][st])
+    avgFR1.append(np.mean(thisStep))
+  plt.plot(steps,avgFR1,color="blue")
+  plt.plot(steps,[GPi_limits[0]] * len(steps),color='red')
+  plt.plot(steps,[GPi_limits[1]] * len(steps),color='red')
+  # if the filename is not defined in save variable
+  if save is None:
+    print "\tShowing plot"
+    plt.show()
+  else :
+    print "\tPlot saved under the name %s" % save
+    fig.savefig(save)
+
 #plot_errorFR_by_activity([(0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.0, 0.5)],{(0.0, 0.0): [(0, 70.0, 65.238095238095241, '0'), (2, 73.571428571428569, 67.857142857142847, '0'), (4, 65.714285714285708, 63.095238095238095, '0'), (6, 63.095238095238095, 70.238095238095241, '0'), (8, 70.0, 68.095238095238102, '0')], (0.0, 0.5): [(1, 90.0, 10.0, '2'), (3, 89.761904761904759, 6.9047619047619051, '2'), (5, 84.285714285714278, 13.80952380952381, '2'), (7, 86.904761904761898, 11.428571428571429, '2'), (9, 93.095238095238088, 5.0, '2')]},9,1.5,False,5,300,False,None)
 #plot_multichan_pieChart(np.arange(0,1.1,0.1),{(0.1,0.7):(0,10,90),(0.,0):(0,50,50),(0.6,0.5):(10,60,30)})
 
@@ -836,4 +881,6 @@ plot_inDegrees_boarders_table(table,'0')
 
 #plot_models_ranges({0: ['#0 , MSN=OK , FSI=NO[+4.8340] , STN=OK , GPe=OK , GPi=NO[+6.6000] , ']},["'GMSN':5.7", "'GFSI':1.3", "'GSTN':1.38", "'GGPe':1.3", "'IeGPe':13.", "'GGPi':1.", "'IeGPi':11."],models=[0])
 
-#plot_fr_by_time([0,1],[[ 69.01785714 , 24.82142857],[ 71.25       , 19.82142857]],['0', '0'], [[0.0,0.0],[0.5,0.5]],9,1.5,False,1,None)
+#plot_fr_by_time([0, 1, 2, 3, 4],{17: [[ 78.57142857,  65.23809524,  69.52380952,  64.28571429,73.33333333],[ 72.38095238,  64.76190476,  63.80952381,  60.,59.04761905]]},['0', '0', '0', '0', '3'],[(0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0)],9,1.5,False,1,150,False,[17])
+
+#plot_fr_for1([59.1,79.5],{17:{0: 70.15714285714286, 1: 70.47142857142858, 2: 70.77142857142857, 3: 70.02857142857142, 4: 71.34285714285714, 5: 68.74285714285715, 6: 70.74285714285715, 7: 70.61428571428571, 8: 72.44285714285714, 9: 69.91428571428573, 10: 68.88571428571429, 11: 69.27142857142857, 12: 71.6, 13: 69.81428571428572, 14: 69.32857142857144, 15: 69.07142857142857, 16: 70.44285714285714, 17: 69.45714285714286, 18: 70.55714285714286, 19: 70.0, 20: 69.75714285714285, 21: 70.92857142857143, 22: 70.57142857142858, 23: 68.9, 24: 69.62857142857143, 25: 70.12857142857143, 26: 69.34285714285714, 27: 69.62857142857143, 28: 69.2, 29: 71.12857142857143, 30: 72.11428571428571, 31: 70.64285714285715, 32: 70.27142857142857, 33: 71.21428571428572, 34: 69.61428571428571, 35: 69.54285714285714, 36: 69.07142857142857, 37: 71.75714285714285, 38: 70.57142857142858, 39: 69.4857142857143, 40: 69.11428571428571, 41: 70.1, 42: 70.34285714285714, 43: 69.58571428571429, 44: 69.81428571428572, 45: 68.12857142857143, 46: 70.38571428571429, 47: 70.74285714285715, 48: 71.08571428571427, 49: 69.44285714285714},1:{0: 71.24285714285715, 1: 70.4857142857143, 2: 69.7, 3: 70.52857142857142, 4: 70.15714285714286, 5: 69.82857142857144, 6: 69.9857142857143, 7: 70.3, 8: 70.7, 9: 68.8, 10: 68.44285714285714, 11: 70.25714285714285, 12: 69.64285714285714, 13: 70.78571428571429, 14: 70.54285714285714, 15: 69.8, 16: 70.28571428571428, 17: 68.24285714285715, 18: 70.2, 19: 71.18571428571428, 20: 68.94285714285714, 21: 70.07142857142857, 22: 70.88571428571429, 23: 71.11428571428571, 24: 71.25714285714285, 25: 69.85714285714285, 26: 68.72857142857143, 27: 68.84285714285714, 28: 71.21428571428572, 29: 69.68571428571428, 30: 70.14285714285714, 31: 68.55714285714286, 32: 69.9857142857143, 33: 71.68571428571428, 34: 69.21428571428571, 35: 70.0142857142857, 36: 69.52857142857142, 37: 72.44285714285714, 38: 70.17142857142856, 39: 69.4857142857143, 40: 69.8, 41: 70.81428571428572, 42: 69.15714285714286, 43: 69.77142857142857, 44: 69.38571428571429, 45: 68.15714285714286, 46: 71.3, 47: 70.41428571428573, 48: 71.64285714285715, 49: 70.6}},np.zeros(50),9,1000,5000,[17])
