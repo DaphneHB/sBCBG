@@ -476,7 +476,7 @@ def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),simuTime=
   pltT.plot_multichan_pieChart(xytab,trials_dico,model,ratioChan1Chan2,NbTrials,shuffled,save=savename)
     
 
-def generate_GurneyTestZero(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False,rezero=False,rev=False,simuTime=800,sameVal=None,constantChan=None,seeds=[17], seedAvg=True) :
+def generate_GurneyTestZero(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False,rezero=False,rev=False,simuTime=800,sameVal=None,constantChan=None,seeds=[17], seedAvg=True,zest=False,shutOffset=False) :
   if not model is None :
     params['LG14modelID'] = model
     switch_model(model)
@@ -498,7 +498,10 @@ def generate_GurneyTestZero(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuff
         print "\tWith return to ZERO by regenerating (0.,0.) !"
       else :
         print "\tWith return to ZERO by saving the (0.,0.) state !"
-      steps,frates,selections,activities,frtrials_dico = checkGurneyTestGenericReZero(frtrials_dico,xytab=xytab,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=False,params=params,PActiveCSN=0.2,PActivePTN=0.2,reversing=rev,simuTime=simuTime,sameVal=sameVal,constantChan=constantChan,rezero=rezero)
+      if zest :
+        steps,frates,selections,activities,frtrials_dico = checkGurneyTestGenericZero(frtrials_dico,xytab=xytab,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=False,params=params,PActiveCSN=0.2,PActivePTN=0.2)
+      else :
+        steps,frates,selections,activities,frtrials_dico = checkGurneyTestGenericReZero(frtrials_dico,xytab=xytab,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=False,params=params,PActiveCSN=0.2,PActivePTN=0.2,reversing=rev,simuTime=simuTime,sameVal=sameVal,constantChan=constantChan,rezero=rezero,shutOffset=shutOffset)
       seedFR_dict[sd] = frates
     if filename is None :
       filename = currtime + "rezero2ChansCompetition.csv"
@@ -522,7 +525,7 @@ def generate_GurneyTestZero(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuff
     pltT.plot_fr_by_time(steps,seedFR_dict,selections,zip(*activities),model,ratioChan1Chan2,shuffled,NbTrials,simuTime,seeds=seeds,reversedChans=rev,save=savename1)
     
 
-def one_chan_simu(offTime=1000,simuTime=5000,xytab=None,model=None,seeds=[17],nbtrials=1,save=False) :
+def one_chan_simu(offTime=1000,simuTime=5000,xytab=None,model=None,seeds=[17],nbtrials=1,save=False,shutOffset=False) :
   if not model is None :
     params['LG14modelID'] = model
     switch_model(model)
@@ -535,21 +538,27 @@ def one_chan_simu(offTime=1000,simuTime=5000,xytab=None,model=None,seeds=[17],nb
     currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
     os.system("rm -rf log/*")
     rnd.seed(sd)
-    GPi_outputs = checkAvgFR_MC(offTime=offTime,simuTime=simuTime,ctx_activity=xytab,out=GPi_outputs,NbTrials=nbtrials,params=params,antagInjectionSite='none',antag='',showRasters=True)
+    score,GPi_outputs = checkAvgFR_MC(offTime=offTime,simuTime=simuTime,ctx_activity=xytab,out=GPi_outputs,NbTrials=nbtrials,params=params,antagInjectionSite='none',antag='',showRasters=True,shutOffset=shutOffset)
     seedFR_dict[sd] = GPi_outputs
     if not xytab is None :
       savename1 = None
       if save :
-        rev = "ChanReversed" if rev else ""
         savename1 = "plots/" + currtime + "oneChanMCtestFRbyStep#" + str(model) + "simu" + str(simuTime) + "offset" + str(offTime) + "ms.png"
-      pltT.plot_fr_for1(FRRNormal['GPi'],seedFR_dict,xytab,model,offTime,simuTime,seeds,save=savename)
+      print "GPi limits --------", FRRNormal['GPi']
+      print "Results -----------", seedFR_dict
+      print "XYtab -------------", xytab
+      print "Model -------------", model
+      print "Offtime -----------", offTime
+      print "Simutime ----------", simuTime
+      print "That seed ---------", [sd]
+      print "Saved to ----------",savename1
+      pltT.plot_fr_for1(FRRNormal['GPi'],seedFR_dict,xytab,model,offTime,simuTime,[sd],save=savename1)
       
-  if not xytab is None :
+  if not xytab is None and len(seeds) > 1 :
     savename1 = None
     if save :
-      rev = "ChanReversed" if rev else ""
       savename1 = "plots/" + currtime + "oneChanMCtestFRbyStepGlob#" + str(model) + "simu" + str(simuTime) + "offset" + str(offTime) + "ms.png"
-    pltT.plot_fr_for1(FRRNormal['GPi'],seedFR_dict,xytab,model,offTime,simuTime,seeds,save=savename)
+    pltT.plot_fr_for1(FRRNormal['GPi'],seedFR_dict,xytab,model,offTime,simuTime,seeds,save=savename1)
   
   
 def launch_SangoGurney() :
@@ -619,12 +628,20 @@ def main() :
   #generate_GurneyTest(generate=True,NbTrials=1,ratioChan1Chan2=1.5,values=[0.,1.,1.1],save=False)
   
   
-  #generate_GurneyTestZero(generate=True,NbTrials=1,ratioChan1Chan2=1.5,shuffled=False,save=True,rezero=False,simuTime=1000,rev=False,sameVal=(0.,0.,50),constantChan=None,model=9,seeds=np.arange(1,32,1))
+  #generate_GurneyTestZero(generate=True,NbTrials=1,ratioChan1Chan2=1.5,shuffled=False,save=True,rezero=False,simuTime=1000,rev=False,sameVal=(0.,0.,50),constantChan=None,model=9,seeds=np.arange(1,32,1),zest=True)
   #generate_GurneyTestZero(generate=True,NbTrials=5,ratioChan1Chan2=1.5,shuffled=False,save=True,rezero=True,simuTime=10000,rev=True)
   ######## test on Sango
   #launch_SangoGurney()
   
-  one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50))
-
+  #simuTime=500
+  one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50),save=True,offTime=200,simuTime=500)
+  '''
+  one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50),save=True,offTime=500,simuTime=500)
+  one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50),save=True,offTime=1000,simuTime=500)
+  #simuTime=3000
+  one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50),save=True,offTime=200,simuTime=10000)
+  one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50),save=True,offTime=500,simuTime=10000)
+  one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50),save=True,offTime=1000,simuTime=10000)
+  '''
 if __name__ == '__main__' :
   main()

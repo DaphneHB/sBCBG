@@ -554,6 +554,7 @@ BGparams = {'MSN':MSNparams,
 Pop = {}
 Fake= {} # Fake contains the Poisson Generators, that will feed the parrot_neurons, stored in Pop
 ConnectMap = {} # when connections are drawn, in "create()", they are stored here so as to be re-usable
+DetailledConnectMap = {} # when connections are drawn, in "create()", they are stored here so as to be re-usable + tgt neuron nb
 
 # the dictionary used to store the desired discharge rates of the various Poisson generators that will be used as external inputs
 rate = {'CSN':   2.  ,

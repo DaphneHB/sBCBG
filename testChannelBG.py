@@ -163,7 +163,7 @@ def connectBG_MC(antagInjectionSite,antag):
 # - G{MSN,FSI,STN,GPi,GPe} : gain to be applied on LG14 input synaptic weights for each population
 #------------------------------------------
 
-def checkAvgFR_MC(out=dict(),NbTrials=1,ctx_activity=None,showRasters=False,params={},antagInjectionSite='none',antag='',logFileName='',CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1.,offTime=1000,simuTime=5000):
+def checkAvgFR_MC(out=dict(),NbTrials=1,ctx_activity=None,showRasters=False,params={},antagInjectionSite='none',antag='',logFileName='',CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1.,shutOffset=False,offTime=1000,simuTime=5000):
   nest.ResetKernel()
   dataPath='log/'
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
@@ -190,7 +190,9 @@ def checkAvgFR_MC(out=dict(),NbTrials=1,ctx_activity=None,showRasters=False,para
   #-------------------------
   createBG_MC()
   connectBG_MC(antagInjectionSite,antag)
-  
+  # lets draw the connectivity matrix
+  print ConnectMap['CMPf->STN']
+  exit()
   if not ctx_activity is None :
     print "Multi-trial test"
     # ctx input activities
@@ -266,7 +268,15 @@ def checkAvgFR_MC(out=dict(),NbTrials=1,ctx_activity=None,showRasters=False,para
   
     for N in NUCLEI:
       # 1000ms offset period for network stabilization
-      spkDetect[N] = nest.Create("spike_detector", params={"withgid": True, "withtime": True, "label": antagStr+N, "to_file": False, 'start':offsetDuration + trial*(offsetDuration+simDuration),'stop':(trial+1)*(offsetDuration+simDuration)})
+      if shutOffset and timeStep!=0:
+        start = trial*simDuration 
+        stop = (trial+1)*simDuration
+      else :
+        start = offsetDuration + trial*(offsetDuration+simDuration) 
+        stop = (trial+1)*(offsetDuration+simDuration)
+
+      spkDetect[N] = nest.Create("spike_detector", params={"withgid": True, "withtime": True, "label": str(trial)+'_'+antagStr+N, "to_file": False, 'start': start ,'stop':stop})
+
       for i in range(len(Pop[N])):
         nest.Connect(Pop[N][i], spkDetect[N])
   
@@ -279,7 +289,10 @@ def checkAvgFR_MC(out=dict(),NbTrials=1,ctx_activity=None,showRasters=False,para
       
       nest.SetStatus(ActPop['CSN'][0],{'rate':CSNrate[0,trial]})
       nest.SetStatus(ActPop['PTN'][0],{'rate':PTNrate[0,trial]})
-    nest.Simulate(simDuration+offsetDuration)
+    if shutOffset and timeStep!=0 :
+      nest.Simulate(simDuration)
+    else :
+      nest.Simulate(simDuration+offsetDuration)
   
     s = '----- RESULTS -----'
     print s
@@ -886,13 +899,13 @@ def checkGurneyTestGeneric(trials_dico,ratio=1.5,simuTime=800,shuffled=True,xyta
 # PActiveCNS/PTN : proportion of "active" neurons in the CSN/PTN populations (in [0.,1.])
 #
 #-----------------------------------------------------------------------
-def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag='',reversing=False,simuTime=800,sameVal=None,constantChan=None,rezero=False):
+def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag='',reversing=False,shutOffset=False,offset=200,simuTime=800,sameVal=None,constantChan=None,rezero=False):
   nest.ResetKernel()
   dataPath='log/'
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
   initNeurons()
 
-  offsetDuration = 200.
+  offsetDuration = float(offset)
   simDuration = float(simuTime) # ms
   
   print '/!\ Using the following LG14 parameterization',params['LG14modelID']
@@ -1065,7 +1078,14 @@ def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.
 
     for i in range(nbRecord):
       for N in NUCLEI:
-        spkDetect[i][N] = nest.Create("spike_detector", params={"withgid": True, "withtime": True, "label": str(timeStep)+'_'+antagStr+N, "to_file": False, 'start':offsetDuration + timeStep*(offsetDuration+simDuration),'stop':(timeStep+1)*(offsetDuration+simDuration)})
+        if shutOffset and timeStep!=0:
+          start = timeStep*simDuration 
+          stop = (timeStep+1)*simDuration
+        else :
+          start = offsetDuration + timeStep*(offsetDuration+simDuration) 
+          stop = (timeStep+1)*(offsetDuration+simDuration)
+
+        spkDetect[i][N] = nest.Create("spike_detector", params={"withgid": True, "withtime": True, "label": str(timeStep)+'_'+antagStr+N, "to_file": False, 'start': start ,'stop':stop})
         nest.Connect(Pop[N][i], spkDetect[i][N])
 
     frstr = str(timeStep) + ', '
@@ -1082,7 +1102,10 @@ def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.
     nest.SetStatus(ActPop['PTN'][0],{'rate':PTNrate[0,timeStep]})
     nest.SetStatus(ActPop['PTN'][1],{'rate':PTNrate[1,timeStep]})
 
-    nest.Simulate(simDuration+offsetDuration)
+    if shutOffset and timeStep != 0:
+      nest.Simulate(simDuration)
+    else :
+      nest.Simulate(simDuration+offsetDuration)
 
     for i in range(nbRecord):
       print '------ Channel',i,'-------'
@@ -1371,7 +1394,7 @@ def checkGurneyTestGenericZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.ar
             zero_activity_state[N][i][neuron] = nest.GetStatus([neuron])[0]
             print "\n------------reactualizing the zero state : neuron = ",neuron," DATA = ", zero_activity_state[N][i][neuron],"--------------"
         print
-
+    exit()
     strTestPassed = 'YES!'
     choosenChannel = "0"
     # for the no input activity in both channels
