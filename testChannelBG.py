@@ -57,6 +57,8 @@ def createBG_MC():
 # Connects the populations of a previously created multi-channel BG circuit 
 #------------------------------------------
 def connectBG_MC(antagInjectionSite,antag):
+  print "params = ",params
+  exit()
   G = {'MSN': params['GMSN'],
        'FSI': params['GFSI'],
        'STN': params['GSTN'],
@@ -80,7 +82,10 @@ def connectBG_MC(antagInjectionSite,antag):
   # some parameterizations from LG14 have no STN->MSN or GPe->MSN synaptic contacts
   if alpha['STN->MSN'] != 0:
     print "alpha['STN->MSN']",alpha['STN->MSN']
+    print "PB EST LA !!!!!"
+    print "params in degree ",params['inDegSTNMSN'],"\nnb simu ",nbSim['STN']
     connectMC('ex','STN','MSN', 'diffuse', inDegree= min(params['inDegSTNMSN'],nbSim['STN']),gain=G['MSN'])
+    exit()
   if alpha['GPe->MSN'] != 0:
     print "alpha['GPe->MSN']",alpha['GPe->MSN']
     connectMC('in','GPe','MSN', 'diffuse', inDegree= min(params['inDegGPeMSN'],nbSim['GPe']),gain=G['MSN']) # diffuse ? focused ?                                             
@@ -191,8 +196,6 @@ def checkAvgFR_MC(out=dict(),NbTrials=1,ctx_activity=None,showRasters=False,para
   createBG_MC()
   connectBG_MC(antagInjectionSite,antag)
   # lets draw the connectivity matrix
-  print ConnectMap['CMPf->STN']
-  exit()
   if not ctx_activity is None :
     print "Multi-trial test"
     # ctx input activities
@@ -617,14 +620,17 @@ def checkGurneyTest(showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., P
 # PActiveCNS/PTN : proportion of "active" neurons in the CSN/PTN populations (in [0.,1.])
 #
 #-----------------------------------------------------------------------
-def checkGurneyTestGeneric(trials_dico,ratio=1.5,simuTime=800,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
+def checkGurneyTestGeneric(trials_dico,ratio=1.5,offsetTime=200,simuTime=800,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag=''):
   nest.ResetKernel()
   dataPath='log/'
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
   initNeurons()
 
-  offsetDuration = 200.
+  offsetDuration = float(offsetTime)
   simDuration = float(simuTime) # ms
+
+  print '/!\ Using the following LG14 parameterization',params['LG14modelID']
+  print params['inDegSTNMSN']
   loadLG14params(params['LG14modelID'])
 
   # We check that all the necessary parameters have been defined. They should be in the modelParams.py file.
@@ -645,9 +651,13 @@ def checkGurneyTestGeneric(trials_dico,ratio=1.5,simuTime=800,shuffled=True,xyta
   #-------------------------
   # creation and connection of the neural populations
   #-------------------------
-  #createBG_MC()
-  #connectBG_MC(antagInjectionSite,antag)
-
+  print params['inDegSTNMSN']
+  createBG_MC()
+  print params
+  print "entering connection"
+  connectBG_MC(antagInjectionSite,antag)
+  print params['inDegSTNMSN']
+  exit()
   #-------------------------
   # prepare the firing rates of the inputs for the 5 steps of the experiment
   #-------------------------  
@@ -895,11 +905,13 @@ def checkGurneyTestGeneric(trials_dico,ratio=1.5,simuTime=800,shuffled=True,xyta
 
   return xytab,trials_dico
 
+
 #-----------------------------------------------------------------------
 # PActiveCNS/PTN : proportion of "active" neurons in the CSN/PTN populations (in [0.,1.])
 #
 #-----------------------------------------------------------------------
 def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.arange(0.,1.,0.1),showRasters=False,params={},CSNFR=[2.,10.], PActiveCSN=1., PTNFR=[15.,35], PActivePTN=1., antagInjectionSite='none',antag='',reversing=False,shutOffset=False,offset=200,simuTime=800,sameVal=None,constantChan=None,rezero=False):
+  
   nest.ResetKernel()
   dataPath='log/'
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
@@ -1543,9 +1555,9 @@ def main():
   
   score = np.zeros((2))
   
-  '''
-  score += checkAvgFR_MC(params=params,antagInjectionSite='none',antag='',showRasters=True)
   
+  score += checkAvgFR_MC(params=params,antagInjectionSite='none',antag='',showRasters=True)
+  '''
   for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
     score += checkAvgFR_MC(params=params,antagInjectionSite='GPe',antag=a)
 

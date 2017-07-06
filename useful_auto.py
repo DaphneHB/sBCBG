@@ -18,37 +18,67 @@ import io_gest as io
 To download the accurate parametrization for the current model
 '''
 def switch_model(model) :
+  global params
   if model==0 :
-    from modelParams0 import params
+    import modelParams0 as modPar0
+    params = modPar0.params
   elif model==1 :
-    from modelParams1 import params
+    import modelParams1 as modPar1
+    params = modPar1.params
   elif model==2 :
-    from modelParams2 import params
+    import modelParams2 as modPar2
+    params = modPar2.params
   elif model==3 :
-    from modelParams3 import params
+    import modelParams3 as modPar3
+    params = modPar3.params
   elif model==4 :
-    from modelParams4 import params
+    import modelParams4 as modPar4
+    params = modPar4.params
   elif model==5 :
-    from modelParams5 import params
+    import modelParams5 as modPar5
+    params = modPar5.params
   elif model==6 :
-    from modelParams6 import params
+    import modelParams6 as modPar6
+    params = modPar6.params
   elif model==7 :
-    from modelParams7 import params
+    import modelParams7 as modPar7
+    params = modPar7.params
   elif model==8 :
-    from modelParams8 import params
+    import modelParams8 as modPar8
+    params = modPar8.params
   elif model==9 :
-    from modelParams9 import params
+    import modelParams9 as modPar9
+    params = modPar9.params
   elif model==10 :
-    from modelParams10 import params
+    import modelParams10 as modPar10
+    params = modPar10.params
   elif model==11 :
-    from modelParams11 import params
+    import modelParams11 as modPar11
+    params = modPar11.params
   elif model==12 :
-    from modelParams12 import params
+    import modelParams12 as modPar12
+    params = modPar12.params
   elif model==13 :
-    from modelParams13 import params
+    import modelParams13 as modPar13
+    params = modPar13.params
   elif model==14 :
-    from modelParams14 import params
+    import modelParams14 as modPar14
+    params = modPar14.params
+ 
 
+'''
+Changes the seed for randomness in Nest and potentially also the global random seed according to the plus_global param
+@params :
+- newseed is the new Nest global seed
+- plus_global is None if the global random seed shouldn't be changed, an int if we want to change it
+'''
+def changeNestRandom(newseed,plus_global=None) :
+  N_vp = nest.GetKernelStatus(['total_num_virtual_procs'])[0]
+  nest.SetKernelStatus({'rng_seeds':range(newseed+N_vp+1,newseed+2*N_vp+1)})
+  if not plus_global is None :
+    rnd.seed(plus_global)
+    
+ 
 def launching_exec_by_models(validFile,models=np.arange(0,15,1),score=0) :
   # removing the previous tests
   os.system("rm -rf "+validFile)
@@ -442,7 +472,7 @@ Arguments :
 - NbTrials is the number of trials (1 trial = len(values)^2 simulations)
 - pathToData is to know where to save the file
 '''
-def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),simuTime=800,shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False) :
+def generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),simuTime=800,shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False,remove_gdf=True,nestSeed=17,rndSeed=17) :
   
   execTime = time.localtime()
   currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
@@ -452,9 +482,16 @@ def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),simuTime=
   if not model is None :
     params['LG14modelID'] = model
     switch_model(model)
+    print "************************ Model changed to " + str(params['LG14modelID']) + " ************************"
   else :
     model = params['LG14modelID']
+    print "************************ Model kept as " + str(params['LG14modelID']) + " ************************"
+  if model != params['LG14modelID'] :
+    print "------- ERROR : The model did not change, still #" + str(params['LG14modelID']) + " instead of #" + str(model)
+    exit()
+  params['nbCh'] = nbChannels if nbChannels > 1 else 2
   if generate or filename is None:
+    changeNestRandom(nestSeed,rndSeed)
     for trial in range(NbTrials) :
       os.system("rm -fr log/*")
       print "############################## TRIAL no. %d ###########################" % trial
@@ -473,15 +510,17 @@ def generate_GurneyTest(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),simuTime=
   savename = None
   if save :
     savename = "plots/" + currtime + "gurneyTest(" + str(ratioChan1Chan2) + ")#" + str(model) + ".png"
-  pltT.plot_multichan_pieChart(xytab,trials_dico,model,ratioChan1Chan2,NbTrials,shuffled,save=savename)
-    
+  pltT.plot_multichan_pieChart(xytab,trials_dico,model,ratioChan1Chan2,NbTrials,shuffled,nestSeed,rndSeed,save=savename)
+  if remove_gdf :
+    os.system("rm -rf log/*.gdf")
 
-def generate_GurneyTestZero(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False,rezero=False,rev=False,simuTime=800,sameVal=None,constantChan=None,seeds=[17], seedAvg=True,zest=False,shutOffset=False) :
+def generate_GurneyTestZero(nbChannels=2,ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False,rezero=False,rev=False,simuTime=800,sameVal=None,constantChan=None,seeds=[17], seedAvg=True,zest=False,shutOffset=False) :
   if not model is None :
     params['LG14modelID'] = model
     switch_model(model)
   else :
     model = params['LG14modelID']
+  params['nbCh'] = nbChannels if nbChannels > 1 else 2  
   # where seedFR_dict is as {seed : [[list of FR1s],[list of FR2s]]}
   seedFR_dict = {}
   for sd in seeds :
@@ -525,7 +564,7 @@ def generate_GurneyTestZero(ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),shuff
     pltT.plot_fr_by_time(steps,seedFR_dict,selections,zip(*activities),model,ratioChan1Chan2,shuffled,NbTrials,simuTime,seeds=seeds,reversedChans=rev,save=savename1)
     
 
-def one_chan_simu(offTime=1000,simuTime=5000,xytab=None,model=None,seeds=[17],nbtrials=1,save=False,shutOffset=False) :
+def one_chan_simu(offTime=1000,simuTime=5000,xytab=None,model=None,nestSeed=17,seeds=[17],nbtrials=1,save=False,shutOffset=False) :
   if not model is None :
     params['LG14modelID'] = model
     switch_model(model)
@@ -537,7 +576,7 @@ def one_chan_simu(offTime=1000,simuTime=5000,xytab=None,model=None,seeds=[17],nb
     execTime = time.localtime()
     currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
     os.system("rm -rf log/*")
-    rnd.seed(sd)
+    changeNestRandom(nestSeed,sd)
     score,GPi_outputs = checkAvgFR_MC(offTime=offTime,simuTime=simuTime,ctx_activity=xytab,out=GPi_outputs,NbTrials=nbtrials,params=params,antagInjectionSite='none',antag='',showRasters=True,shutOffset=shutOffset)
     seedFR_dict[sd] = GPi_outputs
     if not xytab is None :
@@ -552,13 +591,49 @@ def one_chan_simu(offTime=1000,simuTime=5000,xytab=None,model=None,seeds=[17],nb
       print "Simutime ----------", simuTime
       print "That seed ---------", [sd]
       print "Saved to ----------",savename1
-      pltT.plot_fr_for1(FRRNormal['GPi'],seedFR_dict,xytab,model,offTime,simuTime,[sd],save=savename1)
+      pltT.plot_fr_for1(FRRNormal['GPi'],seedFR_dict,xytab,model,offTime,simuTime,nestSeed,[sd],save=savename1)
       
   if not xytab is None and len(seeds) > 1 :
     savename1 = None
     if save :
       savename1 = "plots/" + currtime + "oneChanMCtestFRbyStepGlob#" + str(model) + "simu" + str(simuTime) + "offset" + str(offTime) + "ms.png"
     pltT.plot_fr_for1(FRRNormal['GPi'],seedFR_dict,xytab,model,offTime,simuTime,seeds,save=savename1)
+  
+
+def generate_connectMap (nuclSrc,nuclTgt,nbChannels=1,nestseed=17,seed=17,model=None,save=False) :
+  # no need to simulate just to connect and check the connections
+  changeNestRandom(nestseed,seed)
+  print '/!\ Using the following LG14 parameterization',params['LG14modelID']
+  loadLG14params(params['LG14modelID'])
+  # changing model number
+  if not model is None :
+    params['LG14modelID'] = model
+    switch_model(model)
+  else :
+    model = params['LG14modelID']
+  # changing channel number
+  params['nbCh'] = nbChannels
+  #-------------------------
+  # creation and connection of the neural populations
+  #-------------------------
+  nest.ResetKernel()
+  nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2})
+  initNeurons()
+  createBG_MC()
+  connectBG_MC('none','')
+  for src in nuclSrc :
+    for tgt in nuclTgt :
+      if not ConnectMap.has_key(src+'->'+tgt) :
+        continue
+      # lets draw the connectivity matrix
+      nbTgtNeurons = int(nbSim[tgt])
+      savename = None
+      execTime = time.localtime()
+      currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])+':'+str(execTime[5])
+      if save :
+        savename = "plots/" + currtime + "connectMat" + src + "-" + tgt +   str(nbChannels) + "channels#" + str(model) + ".png"
+      pltT.plot_connectMap(src,tgt,nbTgtNeurons,nbChannels,ConnectMap[src+'->'+tgt],Pop[tgt],"focused",nestSeed=nestseed,rndSeed=seed,model=model,save=savename)
+  print "\t---------- END : Simulation generated for everyone"
   
   
 def launch_SangoGurney() :
@@ -625,7 +700,7 @@ def main() :
   #  print items
   
   #generate_GurneyTest(generate=False,save=True,filename="2017-05-31 15:51:26.783822dualchanCompetition.csv")
-  #generate_GurneyTest(generate=True,NbTrials=1,ratioChan1Chan2=1.5,values=[0.,1.,1.1],save=False)
+  #generate_GurneyTest(generate=True,NbTrials=1,ratioChan1Chan2=1.5,values=[0.,1.,1.1],save=True,model=9)
   
   
   #generate_GurneyTestZero(generate=True,NbTrials=1,ratioChan1Chan2=1.5,shuffled=False,save=True,rezero=False,simuTime=1000,rev=False,sameVal=(0.,0.,50),constantChan=None,model=9,seeds=np.arange(1,32,1),zest=True)
@@ -634,7 +709,7 @@ def main() :
   #launch_SangoGurney()
   
   #simuTime=500
-  one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50),save=True,offTime=200,simuTime=500)
+  #one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50),save=True,offTime=200,simuTime=500)
   '''
   one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50),save=True,offTime=500,simuTime=500)
   one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50),save=True,offTime=1000,simuTime=500)
@@ -643,5 +718,11 @@ def main() :
   one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50),save=True,offTime=500,simuTime=10000)
   one_chan_simu(seeds=np.arange(1,32,1),xytab=np.zeros(50),save=True,offTime=1000,simuTime=10000)
   '''
+  #one_chan_simu(nestSeed=17,seeds=[1],xytab=np.zeros(50),save=True,offTime=500,simuTime=500)
+  #one_chan_simu(nestSeed=31,seeds=[1],xytab=np.zeros(50),save=True,offTime=500,simuTime=500)
+  #generate_connectMap (["PTN","CSN","FSI","STN"],NUCLEI,nbChannels=1,seed=31,model=9,save=True)
+  #generate_connectMap (["PTN"],["FSI"],nbChannels=1,nestseed=1,seed=31,model=9,save=True)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),simuTime=800,shuffled=True,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=1,save=False,remove_gdf=True,nestSeed=17,rndSeed=17)
+
 if __name__ == '__main__' :
   main()

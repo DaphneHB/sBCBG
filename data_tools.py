@@ -318,3 +318,4 @@ def dualchanFileToPercentages(chan_output_dict) :
     errorperc = round(100. * vals.count("3") / totalNB)
     chans_percentages[key] = (noChanperc,chan1perc,chan2perc, errorperc)
   return chans_percentages
+

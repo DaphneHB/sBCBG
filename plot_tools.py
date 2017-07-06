@@ -666,7 +666,7 @@ Arguments :
   - xtab, the list of x values (also y value : symetric, square)
   - the data, a dict {value tuple : chan percentage tuple} where value tuple is the x,y coordinates
 '''
-def plot_multichan_pieChart(tab, values_dict, model,ratio,NbTrials,shuffled,save=None) :
+def plot_multichan_pieChart(tab, values_dict, model,ratio,NbTrials,shuffled,nestseed,seed,save=None) :
   print "Plotting the 2-channels action selection competition for #%d" % model
   nbVals = float(len(tab)) + 1
   step = round(1/nbVals,1)
@@ -684,7 +684,7 @@ def plot_multichan_pieChart(tab, values_dict, model,ratio,NbTrials,shuffled,save
   plt.xticks(new_tab)
   plt.yticks(new_tab)
   shuffleStr = "shuffled inputs" if shuffled else "non-shuffled inputs"
-  plt.title('2-channels action selection competition\n#%d (over %d trials with %s)\n[ratio=%.3f]' % (model,NbTrials,shuffleStr,ratio))
+  plt.title('2-channels action selection competition\n#%d (over %d trials with %s)\n[ratio=%.3f, NEST seed=%d, random seed=%d]' % (model,NbTrials,shuffleStr,ratio,nestseed,seed))
   plt.gca().set_aspect('equal', adjustable='box')
   plt.grid()
   #legend
@@ -833,13 +833,13 @@ def plot_errorFR_by_activity(actLevels,frtrials_dict,model,ratio,shuffled,nbTria
     print "\tPlot saved under the name %s" % save
     fig.savefig(save)
     
-def plot_fr_for1(GPi_limits,oneChanFR,actLevels,model,offsetTime,simuTime,seeds,save=None) :
+def plot_fr_for1(GPi_limits,oneChanFR,actLevels,model,offsetTime,simuTime,nestSeed,seeds,save=None) :
   print "Plotting the MC input activity test on 1 channel for #%d" % model
   fig = plt.figure(figsize=(10,10))
   # specifications of the plot
   plt.xlabel('Time Steps',fontsize=12)
   plt.ylabel('Firing Rates (Hz)',fontsize=12)
-  seedStr = "seeds=[" + ",".join(map(str,seeds)) + "]"
+  seedStr = "seeds=NEST" + str(nestSeed) + "&[" + ",".join(map(str,seeds)) + "]"
   plt.title('1 channel FR analyze on MC plot\n#%d [%s offsetTime=%dms simuTime=%dms]\n\n' % (model,seedStr,offsetTime,simuTime),fontsize=10)
   plt.grid()
   actLevels = map(str,actLevels)
@@ -866,7 +866,32 @@ def plot_fr_for1(GPi_limits,oneChanFR,actLevels,model,offsetTime,simuTime,seeds,
   else :
     print "\tPlot saved under the name %s" % save
     fig.savefig(save)
-
+    
+def plot_connectMap(nameSrc,nameTgt,nbTgtNeurons,nbChannels,specConnectMap,nPopulation,connectType,nestSeed,rndSeed,model=0,save=None) :
+  plot_colors = mcolors.cnames.keys()[:nbChannels]     # list of colors in matplotlib
+  #markers = [(2+i/2, 1+i%2, 0) for i in range(len(recType)*len(recType)*len(NUCLEI))]   # markers for the plot for 
+  fig = plt.figure()
+  ax = fig.add_subplot(111)
+  xlbls = []
+  for chan in range(nbChannels) :
+    for neur in range(nbTgtNeurons) :      
+      xVals = [nPopulation[chan][neur]]*len(specConnectMap[chan][neur])
+      xlbls.append(int(xVals[0]))
+      plt.scatter(xVals,list(specConnectMap[chan][neur]),c=plot_colors[chan])
+  xlbls = [""] + sorted(xlbls)
+  ax.set_xticklabels(xlbls)
+  #plot_title = "Connection matrix of " + nameSrc + "->" + nameTgt + " in a " + str(nbChannels) + "-channel(s) simulation\nWith " + connectType + " connections #" + str(model)
+  plot_title = "Connection matrix of " + nameSrc + "->" + nameTgt + " in a " + str(nbChannels) + "-channel(s) simulation\n#" + str(model) + " NEST seed=" + str(nestSeed) + ", random seed=" + str(rndSeed)
+  plt.title(plot_title)
+  # if the filename is not defined in save variable
+  if save is None:
+    print "\tShowing plot"
+    plt.show()
+  else :
+    print "\tPlot saved under the name %s" % save
+    fig.savefig(save)
+    
+  
 #plot_errorFR_by_activity([(0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.0, 0.5)],{(0.0, 0.0): [(0, 70.0, 65.238095238095241, '0'), (2, 73.571428571428569, 67.857142857142847, '0'), (4, 65.714285714285708, 63.095238095238095, '0'), (6, 63.095238095238095, 70.238095238095241, '0'), (8, 70.0, 68.095238095238102, '0')], (0.0, 0.5): [(1, 90.0, 10.0, '2'), (3, 89.761904761904759, 6.9047619047619051, '2'), (5, 84.285714285714278, 13.80952380952381, '2'), (7, 86.904761904761898, 11.428571428571429, '2'), (9, 93.095238095238088, 5.0, '2')]},9,1.5,False,5,300,False,None)
 #plot_multichan_pieChart(np.arange(0,1.1,0.1),{(0.1,0.7):(0,10,90),(0.,0):(0,50,50),(0.6,0.5):(10,60,30)})
 
@@ -886,3 +911,5 @@ plot_inDegrees_boarders_table(table,'0')
 #plot_fr_for1([59.1,79.5],{17:{0: 70.15714285714286, 1: 70.47142857142858, 2: 70.77142857142857, 3: 70.02857142857142, 4: 71.34285714285714, 5: 68.74285714285715, 6: 70.74285714285715, 7: 70.61428571428571, 8: 72.44285714285714, 9: 69.91428571428573, 10: 68.88571428571429, 11: 69.27142857142857, 12: 71.6, 13: 69.81428571428572, 14: 69.32857142857144, 15: 69.07142857142857, 16: 70.44285714285714, 17: 69.45714285714286, 18: 70.55714285714286, 19: 70.0, 20: 69.75714285714285, 21: 70.92857142857143, 22: 70.57142857142858, 23: 68.9, 24: 69.62857142857143, 25: 70.12857142857143, 26: 69.34285714285714, 27: 69.62857142857143, 28: 69.2, 29: 71.12857142857143, 30: 72.11428571428571, 31: 70.64285714285715, 32: 70.27142857142857, 33: 71.21428571428572, 34: 69.61428571428571, 35: 69.54285714285714, 36: 69.07142857142857, 37: 71.75714285714285, 38: 70.57142857142858, 39: 69.4857142857143, 40: 69.11428571428571, 41: 70.1, 42: 70.34285714285714, 43: 69.58571428571429, 44: 69.81428571428572, 45: 68.12857142857143, 46: 70.38571428571429, 47: 70.74285714285715, 48: 71.08571428571427, 49: 69.44285714285714},1:{0: 71.24285714285715, 1: 70.4857142857143, 2: 69.7, 3: 70.52857142857142, 4: 70.15714285714286, 5: 69.82857142857144, 6: 69.9857142857143, 7: 70.3, 8: 70.7, 9: 68.8, 10: 68.44285714285714, 11: 70.25714285714285, 12: 69.64285714285714, 13: 70.78571428571429, 14: 70.54285714285714, 15: 69.8, 16: 70.28571428571428, 17: 68.24285714285715, 18: 70.2, 19: 71.18571428571428, 20: 68.94285714285714, 21: 70.07142857142857, 22: 70.88571428571429, 23: 71.11428571428571, 24: 71.25714285714285, 25: 69.85714285714285, 26: 68.72857142857143, 27: 68.84285714285714, 28: 71.21428571428572, 29: 69.68571428571428, 30: 70.14285714285714, 31: 68.55714285714286, 32: 69.9857142857143, 33: 71.68571428571428, 34: 69.21428571428571, 35: 70.0142857142857, 36: 69.52857142857142, 37: 72.44285714285714, 38: 70.17142857142856, 39: 69.4857142857143, 40: 69.8, 41: 70.81428571428572, 42: 69.15714285714286, 43: 69.77142857142857, 44: 69.38571428571429, 45: 68.15714285714286, 46: 71.3, 47: 70.41428571428573, 48: 71.64285714285715, 49: 70.6}},np.zeros(50),9,1000,5000,[1])
 
 #plot_fr_for1([59.1, 79.5],{1: ((245, 5), {0: 71.24285714285715, 1: 70.4857142857143, 2: 69.7, 3: 70.52857142857142, 4: 70.15714285714286, 5: 69.82857142857144, 6: 69.9857142857143, 7: 70.3, 8: 70.7, 9: 68.8, 10: 68.44285714285714, 11: 70.25714285714285, 12: 69.64285714285714, 13: 70.78571428571429, 14: 70.54285714285714, 15: 69.8, 16: 70.28571428571428, 17: 68.24285714285715, 18: 70.2, 19: 71.18571428571428, 20: 68.94285714285714, 21: 70.07142857142857, 22: 70.88571428571429, 23: 71.11428571428571, 24: 71.25714285714285, 25: 69.85714285714285, 26: 68.72857142857143, 27: 68.84285714285714, 28: 71.21428571428572, 29: 69.68571428571428, 30: 70.14285714285714, 31: 68.55714285714286, 32: 69.9857142857143, 33: 71.68571428571428, 34: 69.21428571428571, 35: 70.0142857142857, 36: 69.52857142857142, 37: 72.44285714285714, 38: 70.17142857142856, 39: 69.4857142857143, 40: 69.8, 41: 70.81428571428572, 42: 69.15714285714286, 43: 69.77142857142857, 44: 69.38571428571429, 45: 68.15714285714286, 46: 71.3, 47: 70.41428571428573, 48: 71.64285714285715, 49: 70.6}), 2: None, 3: None, 4: None, 5: None, 6: None, 7: None, 8: None, 9: None, 10: None, 11: None, 12: None, 13: None, 14: None, 15: None, 16: None, 17: None, 18: None, 19: None, 20: None, 21: None, 22: None, 23: None, 24: None, 25: None, 26: None, 27: None, 28: None, 29: None, 30: None, 31: None},[ 0.  ,0. , 0. , 0.  ,0.  ,0.  ,0.  ,0. , 0. , 0. , 0. , 0. , 0.,  0.,  0.,  0. , 0.,  0.,  0.  ,0.  ,0.  ,0.  ,0. , 0. , 0.,  0.,  0. , 0.,  0.,  0.,  0.,  0.,  0.,  0. , 0. , 0.,  0.,  0. , 0.,  0.,  0.,  0. , 0.,  0. , 0. , 0.  ,0.  ,0. , 0. , 0.],9,1000,5000,[1],None)
+
+#plot_connectMap("CMPf","STN",8,1,[[(8945, 8951, 8952, 8946, 8950, 8949, 8953, 8948, 8947), (8953, 8945, 8946, 8952, 8947, 8950, 8949, 8948, 8951), (8948, 8953, 8950, 8949, 8947, 8951, 8952, 8945, 8946), (8948, 8947, 8946, 8950, 8949, 8953, 8951, 8945, 8952), (8953, 8950, 8945, 8946, 8947, 8948, 8952, 8951, 8949), (8953, 8948, 8946, 8951, 8947, 8950, 8952, 8949, 8945), (8947, 8948, 8953, 8945, 8946, 8951, 8952, 8949, 8950), (8949, 8951, 8948, 8947, 8953, 8950, 8945, 8946, 8952)]],[[2698,2699,2700,2701,2702,2703,2704,2705]],"focused",model=9)

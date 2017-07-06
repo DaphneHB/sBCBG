@@ -145,7 +145,7 @@ def connect(type,nameSrc,nameTgt,inDegree,LCGDelays=True,gain=1.):
   else:
     loadConnectMap = False
     ConnectMap[nameSrc+'->'+nameTgt] = []
-
+    
   # determine which transmission delay to use:
   if LCGDelays:
     delay= tau[nameSrc+'->'+nameTgt]
@@ -171,7 +171,7 @@ def connect(type,nameSrc,nameTgt,inDegree,LCGDelays=True,gain=1.):
     #otherwise, use the existing one
       #print nameSrc,"->",nameTgt,"using previously defined connection map"
       inputPop = ConnectMap[nameSrc+'->'+nameTgt][nTgt]
-
+    
     for r in lRecType:
       w = W[r]
 
@@ -201,7 +201,7 @@ def connectMC(type,nameSrc,nameTgt,projType,inDegree,LCGDelays=True,gain=1.):
     lRecType = ['GABA']
   else:
     print "Undefined connexion type:",type
-
+  
   # compute the global weight of the connection, for each receptor type:
   W = computeW(lRecType,nameSrc,nameTgt,inDegree,gain,verbose=True)
 
@@ -257,10 +257,15 @@ def connectMC(type,nameSrc,nameTgt,projType,inDegree,LCGDelays=True,gain=1.):
       #otherwise, use the existing one
         #print nameSrc,"->",nameTgt,"using previously defined connection map"
         inputPop = ConnectMap[nameSrc+'->'+nameTgt][tgtChannel][nTgt]
-
+      if nameSrc == "xCMPf" and nameTgt=="STN" :
+        print "CHANNEL NUM :",tgtChannel
+        print "connectMap",ConnectMap[nameSrc+'->'+nameTgt]
+        print "input POP",inputPop
+        print "pop tgt,ntgt",Pop[nameTgt][tgtChannel][nTgt]
+        print "neuron number",nTgt
+    
       for r in lRecType:
         w = W[r]
-
         nest.Connect(pre=inputPop, post=(Pop[nameTgt][tgtChannel][nTgt],),syn_spec={'receptor_type':recType[r],'weight':w,'delay':delay})
 
 #-------------------------------------------------------------------------------
@@ -269,7 +274,6 @@ def connectMC(type,nameSrc,nameTgt,projType,inDegree,LCGDelays=True,gain=1.):
 def computeW(listRecType,nameSrc,nameTgt,inDegree,gain=1.,verbose=False):
   maxInDegree = 0
   minInDegree = 0
-  
   # nu is the average total synaptic inputs a neuron of tgt receives from different neurons of src
   if nameSrc=='CSN' or nameSrc=='PTN':
     nu = alpha[nameSrc+'->'+nameTgt]
@@ -553,8 +557,7 @@ BGparams = {'MSN':MSNparams,
 
 Pop = {}
 Fake= {} # Fake contains the Poisson Generators, that will feed the parrot_neurons, stored in Pop
-ConnectMap = {} # when connections are drawn, in "create()", they are stored here so as to be re-usable
-DetailledConnectMap = {} # when connections are drawn, in "create()", they are stored here so as to be re-usable + tgt neuron nb
+ConnectMap = {} # when connections are drawn, in "create()", they are stored here so as to be re-usable (Target neuron nb is in Pop[nameTgt] using same order)
 
 # the dictionary used to store the desired discharge rates of the various Poisson generators that will be used as external inputs
 rate = {'CSN':   2.  ,
