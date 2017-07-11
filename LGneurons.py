@@ -581,7 +581,8 @@ inDegree_boarders = dict(zip(keys, [None]*len(keys)))
 # recording the path where all data is saved
 dataPath='log/'
 
-
+# for sharing the params from the modelParams.py file with every file fct
+params = {}
 #---------------------------
 def main():
 

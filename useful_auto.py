@@ -702,7 +702,6 @@ def main() :
   #generate_GurneyTest(generate=False,save=True,filename="2017-05-31 15:51:26.783822dualchanCompetition.csv")
   #generate_GurneyTest(generate=True,NbTrials=1,ratioChan1Chan2=1.5,values=[0.,1.,1.1],save=True,model=9)
   
-  
   #generate_GurneyTestZero(generate=True,NbTrials=1,ratioChan1Chan2=1.5,shuffled=False,save=True,rezero=False,simuTime=1000,rev=False,sameVal=(0.,0.,50),constantChan=None,model=9,seeds=np.arange(1,32,1),zest=True)
   #generate_GurneyTestZero(generate=True,NbTrials=5,ratioChan1Chan2=1.5,shuffled=False,save=True,rezero=True,simuTime=10000,rev=True)
   ######## test on Sango

@@ -1,5 +1,5 @@
- #!/apps/free/python/2.7.10/bin/python
-# -*- coding: utf-8 -*-    
+#!/apps/free/python/2.7.10/bin/python
+# -*- coding: utf-8 -*-
 from LGneurons import *
 from modelParams import *
 from gurneyParams import *
@@ -8,11 +8,13 @@ import nest.raster_plot
 #import time
 import sys
 import os
+  
+# end if
+
 # params possible keys:
 # - nb{MSN,FSI,STN,GPi,GPe,CSN,PTN,CMPf} : number of simulated neurons for each population
 # - Ie{GPe,GPi} : constant input current to GPe and GPi
 # - G{MSN,FSI,STN,GPi,GPe} : gain to be applied on LG14 input synaptic weights for each population
-
 #------------------------------------------
 # Creates the populations of neurons necessary to simulate a BG circuit
 #------------------------------------------
@@ -56,9 +58,10 @@ def createBG_MC():
 #------------------------------------------
 # Connects the populations of a previously created multi-channel BG circuit 
 #------------------------------------------
-def connectBG_MC(antagInjectionSite,antag):
-  print "params = ",params
-  exit()
+def connectBG_MC(antagInjectionSite,antag,prms=params):
+  # there were a problem for changing the params dynamically
+  # so we added a local variable 
+  params = prms
   G = {'MSN': params['GMSN'],
        'FSI': params['GFSI'],
        'STN': params['GSTN'],
@@ -82,10 +85,7 @@ def connectBG_MC(antagInjectionSite,antag):
   # some parameterizations from LG14 have no STN->MSN or GPe->MSN synaptic contacts
   if alpha['STN->MSN'] != 0:
     print "alpha['STN->MSN']",alpha['STN->MSN']
-    print "PB EST LA !!!!!"
-    print "params in degree ",params['inDegSTNMSN'],"\nnb simu ",nbSim['STN']
     connectMC('ex','STN','MSN', 'diffuse', inDegree= min(params['inDegSTNMSN'],nbSim['STN']),gain=G['MSN'])
-    exit()
   if alpha['GPe->MSN'] != 0:
     print "alpha['GPe->MSN']",alpha['GPe->MSN']
     connectMC('in','GPe','MSN', 'diffuse', inDegree= min(params['inDegGPeMSN'],nbSim['GPe']),gain=G['MSN']) # diffuse ? focused ?                                             
@@ -625,7 +625,6 @@ def checkGurneyTestGeneric(trials_dico,ratio=1.5,offsetTime=200,simuTime=800,shu
   dataPath='log/'
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2, "data_path": dataPath})
   initNeurons()
-
   offsetDuration = float(offsetTime)
   simDuration = float(simuTime) # ms
 
@@ -651,13 +650,9 @@ def checkGurneyTestGeneric(trials_dico,ratio=1.5,offsetTime=200,simuTime=800,shu
   #-------------------------
   # creation and connection of the neural populations
   #-------------------------
-  print params['inDegSTNMSN']
   createBG_MC()
-  print params
-  print "entering connection"
-  connectBG_MC(antagInjectionSite,antag)
-  print params['inDegSTNMSN']
-  exit()
+  # THE PB start after that
+  connectBG_MC(antagInjectionSite,antag,prms=params)
   #-------------------------
   # prepare the firing rates of the inputs for the 5 steps of the experiment
   #-------------------------  
