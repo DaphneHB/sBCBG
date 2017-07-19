@@ -883,6 +883,7 @@ def plot_connectMap(nameSrc,nameTgt,nbTgtNeurons,nbChannels,specConnectMap,nPopu
   #plot_title = "Connection matrix of " + nameSrc + "->" + nameTgt + " in a " + str(nbChannels) + "-channel(s) simulation\nWith " + connectType + " connections #" + str(model)
   plot_title = "Connection matrix of " + nameSrc + "->" + nameTgt + " in a " + str(nbChannels) + "-channel(s) simulation\n#" + str(model) + " NEST seed=" + str(nestSeed) + ", random seed=" + str(rndSeed)
   plt.title(plot_title)
+  print "Connect Map : ",specConnectMap
   # if the filename is not defined in save variable
   if save is None:
     print "\tShowing plot"

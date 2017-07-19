@@ -472,13 +472,13 @@ Arguments :
 - NbTrials is the number of trials (1 trial = len(values)^2 simulations)
 - pathToData is to know where to save the file
 '''
-def generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),simuTime=800,shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False,remove_gdf=True,nestSeed=17,rndSeed=17) :
+def generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.,values=np.arange(0.,1.,0.1),offsetTime=200.,simuTime=800.,shuffled=True,generate=True,filename=None,NbTrials=5,pathToData=os.getcwd(),model=None,save=False,remove_gdf=True,nestSeed=17,rndSeed=17) :
   
   execTime = time.localtime()
   currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])
   
   trials_dico = {}
-  xytab = values
+  xytab = np.array(values)
   if not model is None :
     params['LG14modelID'] = model
     switch_model(model)
@@ -496,7 +496,7 @@ def generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.,values=np.arange(0.,1.,0
       os.system("rm -fr log/*")
       print "############################## TRIAL no. %d ###########################" % trial
       # launch GurneyTestsgeneric
-      xytab,this_trial = checkGurneyTestGeneric(trials_dico,xytab=xytab,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=False,params=params,PActiveCSN=0.2,PActivePTN=0.2,simuTime=simuTime)
+      xytab,this_trial = checkGurneyTestGeneric(trials_dico,xytab=xytab,shuffled=shuffled,ratio=ratioChan1Chan2,showRasters=False,params=params,PActiveCSN=0.2,PActivePTN=0.2,offsetTime=offsetTime,simuTime=simuTime)
       trials_dico.update(this_trial)
     if filename is None :
       filename = currtime + "dualchanCompetition.csv"
@@ -618,6 +618,7 @@ def generate_connectMap (nuclSrc,nuclTgt,nbChannels=1,nestseed=17,seed=17,model=
   #-------------------------
   nest.ResetKernel()
   nest.SetKernelStatus({'local_num_threads': params['nbcpu'] if ('nbcpu' in params) else 2})
+  print "SEEEEEEEEEEEED = " ,seed
   initNeurons()
   createBG_MC()
   connectBG_MC('none','')
@@ -632,7 +633,8 @@ def generate_connectMap (nuclSrc,nuclTgt,nbChannels=1,nestseed=17,seed=17,model=
       currtime = str(execTime[0])+'_'+str(execTime[1])+'_'+str(execTime[2])+'_'+str(execTime[3])+':'+str(execTime[4])+':'+str(execTime[5])
       if save :
         savename = "plots/" + currtime + "connectMat" + src + "-" + tgt +   str(nbChannels) + "channels#" + str(model) + ".png"
-      pltT.plot_connectMap(src,tgt,nbTgtNeurons,nbChannels,ConnectMap[src+'->'+tgt],Pop[tgt],"focused",nestSeed=nestseed,rndSeed=seed,model=model,save=savename)
+      print "\n\tConnect MAP ******************* \n\t",ConnectMap[src+'->'+tgt],"\n\n"
+      #pltT.plot_connectMap(src,tgt,nbTgtNeurons,nbChannels,ConnectMap[src+'->'+tgt],Pop[tgt],"focused",nestSeed=nestseed,rndSeed=seed,model=model,save=savename)
   print "\t---------- END : Simulation generated for everyone"
   
   
@@ -720,8 +722,36 @@ def main() :
   #one_chan_simu(nestSeed=17,seeds=[1],xytab=np.zeros(50),save=True,offTime=500,simuTime=500)
   #one_chan_simu(nestSeed=31,seeds=[1],xytab=np.zeros(50),save=True,offTime=500,simuTime=500)
   #generate_connectMap (["PTN","CSN","FSI","STN"],NUCLEI,nbChannels=1,seed=31,model=9,save=True)
-  #generate_connectMap (["PTN"],["FSI"],nbChannels=1,nestseed=1,seed=31,model=9,save=True)
-  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),simuTime=800,shuffled=True,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=1,save=False,remove_gdf=True,nestSeed=17,rndSeed=17)
-
+  generate_connectMap (["PTN"],["FSI"],nbChannels=2,nestseed=1,seed=31,model=9,save=False)
+  generate_connectMap (["PTN"],["FSI"],nbChannels=2,nestseed=1,seed=15,model=9,save=False)
+  #one_chan_simu(nestSeed=1,seeds=[31],xytab=np.zeros(5),save=True,offTime=500,simuTime=500)
+  #one_chan_simu(nestSeed=1,seeds=[15],xytab=np.zeros(5),save=True,offTime=500,simuTime=500)
+  # offset time changes
+  '''generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=300,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=500,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=800,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1300,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1500,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1800,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=2000,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=2300,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=2500,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=2800,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=3000,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  #simuTime changes
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=500,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=800,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  # useless : generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=1000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=1500,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=1800,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=2000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=2500,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=3000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=3500,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=4000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=4500,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  generate_GurneyTest(nbChannels=2,ratioChan1Chan2=1.5,values=np.arange(0.,1.,0.1),offsetTime=1000,simuTime=5000,shuffled=False,generate=True,filename=None,NbTrials=1,pathToData=os.getcwd(),model=9,save=True,remove_gdf=True,nestSeed=17,rndSeed=17)
+  '''
 if __name__ == '__main__' :
   main()

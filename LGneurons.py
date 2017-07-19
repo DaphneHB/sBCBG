@@ -257,12 +257,13 @@ def connectMC(type,nameSrc,nameTgt,projType,inDegree,LCGDelays=True,gain=1.):
       #otherwise, use the existing one
         #print nameSrc,"->",nameTgt,"using previously defined connection map"
         inputPop = ConnectMap[nameSrc+'->'+nameTgt][tgtChannel][nTgt]
-      if nameSrc == "xCMPf" and nameTgt=="STN" :
+      if nameSrc == "PTN" and nameTgt=="FSI" :
         print "CHANNEL NUM :",tgtChannel
         print "connectMap",ConnectMap[nameSrc+'->'+nameTgt]
         print "input POP",inputPop
         print "pop tgt,ntgt",Pop[nameTgt][tgtChannel][nTgt]
         print "neuron number",nTgt
+    
     
       for r in lRecType:
         w = W[r]
@@ -604,9 +605,8 @@ def main():
 
   # CSN
   #-------------------------
-  #Pop['CSN']  = nest.Create('poisson_generator')
+  #Pop['CSN']  = nest.Create('poisson_generator',int(nbSim['CSN']))
   #nest.SetStatus(Pop['CSN'],{'rate': 2.0})
-
 
   # PTN
   #-------------------------

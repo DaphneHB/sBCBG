@@ -627,9 +627,8 @@ def checkGurneyTestGeneric(trials_dico,ratio=1.5,offsetTime=200,simuTime=800,shu
   initNeurons()
   offsetDuration = float(offsetTime)
   simDuration = float(simuTime) # ms
-
+  
   print '/!\ Using the following LG14 parameterization',params['LG14modelID']
-  print params['inDegSTNMSN']
   loadLG14params(params['LG14modelID'])
 
   # We check that all the necessary parameters have been defined. They should be in the modelParams.py file.
@@ -646,12 +645,10 @@ def checkGurneyTestGeneric(trials_dico,ratio=1.5,offsetTime=200,simuTime=800,shu
     exit()
   elif params['nbCh']>2:
     nbRecord = 3 # if we have more than 2 channels, we will also record one of the neutral channels
-
   #-------------------------
   # creation and connection of the neural populations
   #-------------------------
   createBG_MC()
-  # THE PB start after that
   connectBG_MC(antagInjectionSite,antag,prms=params)
   #-------------------------
   # prepare the firing rates of the inputs for the 5 steps of the experiment
@@ -660,9 +657,12 @@ def checkGurneyTestGeneric(trials_dico,ratio=1.5,offsetTime=200,simuTime=800,shu
   gPTN = PTNFR[1]-PTNFR[0]
   activityLevels1 = list()
   activityLevels2 = list()
+  if xytab[0] != 0. :
+    xytab.insert(0,0.)
+  repet = len(xytab)
   xytab = map(lambda x : round(x,1),list(xytab))
   for x in xytab :
-    activityLevels1 += [x] * 10
+    activityLevels1 += [x] * repet
     activityLevels2 += xytab
   
   if shuffled :
@@ -674,8 +674,9 @@ def checkGurneyTestGeneric(trials_dico,ratio=1.5,offsetTime=200,simuTime=800,shu
     activityLevels2[1:] = zipper[1]
   
   activityLevels = np.array([activityLevels1,activityLevels2]) # for both channels
-  nbTimes = len(activityLevels[0])  
-  CSNrate= gCSN * activityLevels + np.ones((nbTimes)) * CSNFR[0]
+  
+  nbTimes = len(activityLevels[0])
+  CSNrate = gCSN * activityLevels + np.ones((nbTimes)) * CSNFR[0]
   PTNrate= gPTN * activityLevels + np.ones((nbTimes)) * PTNFR[0]
   #-------------------------
   # and prepare the lists of neurons that will be affected by these activity changes
@@ -950,6 +951,8 @@ def checkGurneyTestGenericReZero(frtrials_dico,ratio=1.5,shuffled=True,xytab=np.
   
   activityLevels1 = list()
   activityLevels2 = list()
+  if xytab[0] != 0. :
+    xytab.insert(0,0.)
   xytab = map(lambda x : round(x,1),list(xytab))
   for x in xytab :
     # to associate every nb with every nb
@@ -1551,16 +1554,18 @@ def main():
   score = np.zeros((2))
   
   
-  score += checkAvgFR_MC(params=params,antagInjectionSite='none',antag='',showRasters=True)
   '''
+  score += checkAvgFR_MC(params=params,antagInjectionSite='none',antag='',showRasters=True)[0]
+  
   for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
-    score += checkAvgFR_MC(params=params,antagInjectionSite='GPe',antag=a)
+    score += checkAvgFR_MC(params=params,antagInjectionSite='GPe',antag=a)[0]
 
   for a in ['All','AMPA','NMDA+AMPA','NMDA','GABAA']:
-    score += checkAvgFR_MC(params=params,antagInjectionSite='GPi',antag=a)
+    score += checkAvgFR_MC(params=params,antagInjectionSite='GPi',antag=a)[0]
   '''
 
   #score += checkGurneyTest(showRasters=True,params=params,PActiveCSN=0.2,PActivePTN=0.2)
+  checkGurneyTestGeneric({},xytab=[0.3,0.5],shuffled=False,ratio=1.5,showRasters=False,params=params,PActiveCSN=0.2,PActivePTN=0.2,simuTime=300.)
   #score += checkGurneyTest(showRasters=True,params=params,PActiveCSN=1.,PActivePTN=1.)
 
   #-------------------------
