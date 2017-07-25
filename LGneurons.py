@@ -313,7 +313,7 @@ def computeW(listRecType,nameSrc,nameTgt,inDegree,gain=1.,verbose=False):
 
 #-------------------------------------------------------------------------------
 
-rnd.seed(15)
+#rnd.seed(15)
 #nest.SetKernelStatus({'local_num_threads':2, "data_path": "log/", "overwrite_files":True})
 nest.SetKernelStatus({'local_num_threads':2, "data_path": "log/"})
 
