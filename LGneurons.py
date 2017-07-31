@@ -189,7 +189,7 @@ def connect(type,nameSrc,nameTgt,inDegree,LCGDelays=True,gain=1.):
 #-------------------------------------------------------------------------------
 def connectMC(type,nameSrc,nameTgt,projType,inDegree,LCGDelays=True,gain=1.):
   print "* connecting ",nameSrc,"->",nameTgt,"with",projType,type,"connection and",inDegree,"inputs"
-
+  
   # prepare receptor type lists:
   if type == 'ex':
     lRecType = ['AMPA','NMDA']
@@ -257,18 +257,13 @@ def connectMC(type,nameSrc,nameTgt,projType,inDegree,LCGDelays=True,gain=1.):
       #otherwise, use the existing one
         #print nameSrc,"->",nameTgt,"using previously defined connection map"
         inputPop = ConnectMap[nameSrc+'->'+nameTgt][tgtChannel][nTgt]
-      if nameSrc == "PTN" and nameTgt=="FSI" :
-        print "CHANNEL NUM :",tgtChannel
-        print "connectMap",ConnectMap[nameSrc+'->'+nameTgt]
-        print "input POP",inputPop
-        print "pop tgt,ntgt",Pop[nameTgt][tgtChannel][nTgt]
-        print "neuron number",nTgt
-    
-    
+      
       for r in lRecType:
         w = W[r]
         nest.Connect(pre=inputPop, post=(Pop[nameTgt][tgtChannel][nTgt],),syn_spec={'receptor_type':recType[r],'weight':w,'delay':delay})
 
+def je_genere() :
+  print "\tRandom genere = ",rnd.random()
 #-------------------------------------------------------------------------------
 # computes the weight of a connection, based on LG14 parameters
 #-------------------------------------------------------------------------------
@@ -313,7 +308,7 @@ def computeW(listRecType,nameSrc,nameTgt,inDegree,gain=1.,verbose=False):
 
 #-------------------------------------------------------------------------------
 
-#rnd.seed(15)
+#rnd.seed(31)
 #nest.SetKernelStatus({'local_num_threads':2, "data_path": "log/", "overwrite_files":True})
 nest.SetKernelStatus({'local_num_threads':2, "data_path": "log/"})
 
